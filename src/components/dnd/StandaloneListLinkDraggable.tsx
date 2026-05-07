@@ -38,7 +38,7 @@ export function StandaloneListLinkDraggable({
       {...(enabled ? listeners : {})}
       {...(enabled ? attributes : {})}
       className={cn(
-        "relative shrink-0 pt-2 pr-2",
+        "relative shrink-0 pt-0 pr-0",
         enabled && "cursor-grab touch-none active:cursor-grabbing",
         enabled && isDragging && "opacity-40"
       )}

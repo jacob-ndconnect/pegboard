@@ -65,7 +65,7 @@ export function SectionRow({
       </div>
       <div
         ref={setLinksDropRef}
-        className="relative flex gap-4 overflow-x-auto rounded-lg pt-4 pr-4 pb-2"
+        className="relative flex gap-0 overflow-x-auto rounded-none pt-4 pr-4 pb-2"
       >
         <LinkDropTargetOverlay
           visible={linkDropTargetActive}
