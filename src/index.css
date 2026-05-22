@@ -5,6 +5,17 @@
 @import "@fontsource-variable/geist";
 @import "@fontsource-variable/geist-mono";
 
+/* Geist Pixel (Square): bundled by `geist`; npm builds are single-master static faces
+   (no variable `fvar` axes). Alternate looks use OpenType stylistic sets, e.g. "ss02" 1 … "ss06" 1 */
+@font-face {
+  font-family: "Geist Pixel";
+  src: url("../node_modules/geist/dist/fonts/geist-pixel/GeistPixel-Square.woff2")
+    format("woff2");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
 @custom-variant dark (&:is(.dark *));
 
 :root {
@@ -40,6 +51,10 @@
   --sidebar-accent-foreground: oklch(0.216 0.006 56.043);
   --sidebar-border: oklch(0.923 0.003 48.717);
   --sidebar-ring: oklch(0.709 0.01 56.259);
+  /* Canvas section titles (SectionFrame Geist Pixel). Variation axes: unsupported for bundled Pixel */
+  --geist-pixel-variation-settings: normal;
+  /* Stylistic sets available in Pixel Square — try e.g. "ss02" 1, combinations of ss01–ss06, ss09 */
+  --geist-pixel-feature-settings: normal;
 }
 
 .dark {
@@ -117,6 +132,7 @@
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
   --font-heading: 'Geist Mono Variable', monospace;
+  --font-geist-pixel: "Geist Pixel", 'Geist Mono Variable', ui-monospace, monospace;
 }
 
 @layer base {

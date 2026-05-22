@@ -199,12 +199,15 @@ export function SectionFrame({
       <div className="group flex min-w-0 items-center justify-between gap-2 pb-0">
         <h3
           className={cn(
-            "max-w-full min-w-0 truncate px-2 py-1 font-semibold",
+            "max-w-full min-w-0 truncate px-2 py-1 font-geist-pixel",
             sectionLabelSize
           )}
           style={{
             backgroundColor: section.accentColor,
             color: getContrastColor(section.accentColor),
+            fontVariationSettings:
+              "var(--geist-pixel-variation-settings, normal)",
+            fontFeatureSettings: "var(--geist-pixel-feature-settings, normal)",
           }}
         >
           {section.name}
