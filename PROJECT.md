@@ -109,7 +109,7 @@ Root component. Responsibilities:
 
 **Files:** `src/background.ts` (built to `background.js`), `public/manifest.json`
 
-- **Manifest:** `"omnibox": { "keyword": "pin" }` — changing the keyword requires editing the manifest / repacking the extension; Settings shows an **info** row explaining Chrome’s “Manage search engines” flow
+- **Manifest:** `"omnibox": { "keyword": "pb" }` — changing the keyword requires editing the manifest / repacking the extension; Settings shows an **info** row explaining Chrome’s “Manage search engines” flow
 - **Behavior:** On input, reads `chrome.storage.sync` under the same `appState` key as the new tab page, filters links by label / domain / `searchTerms`, suggests matches; Enter navigates current or new tab based on disposition
 - **Types:** Background uses a minimal `AppState` shape (sections + links); keep in sync when adding top-level fields the omnibox should ignore or use
 

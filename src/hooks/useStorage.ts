@@ -80,22 +80,20 @@ export function useStorage() {
           const prev = appState!.sections[i]
           if (!isValidPosition(prev?.position)) return true
           const raw = prev?.canvasColumnSpan
-          return (
-            raw !== undefined &&
-            normalizeCanvasColumnSpan(raw) !== raw
-          )
+          return raw !== undefined && normalizeCanvasColumnSpan(raw) !== raw
         })
         appState = { ...appState, sections: migrated }
-        if (needsSave) chrome.storage.sync.set({ [APP_STATE_STORAGE_KEY]: appState })
+        if (needsSave)
+          chrome.storage.sync.set({ [APP_STATE_STORAGE_KEY]: appState })
       }
       if (appState) {
         const storedSettings = appState.settings
         const mergedSettings = { ...DEFAULT_SETTINGS, ...storedSettings }
         const needsPersistSettings =
           !storedSettings ||
-          (Object.keys(DEFAULT_SETTINGS) as (keyof typeof DEFAULT_SETTINGS)[]).some(
-            (k) => !(k in (storedSettings ?? {}))
-          )
+          (
+            Object.keys(DEFAULT_SETTINGS) as (keyof typeof DEFAULT_SETTINGS)[]
+          ).some((k) => !(k in (storedSettings ?? {})))
         const mergedStandalone = appState.standaloneLinks ?? []
         const needsPersistStandalone = appState.standaloneLinks === undefined
         const layoutMode = normalizeLayoutMode(appState.layoutMode)
@@ -106,7 +104,11 @@ export function useStorage() {
           settings: mergedSettings,
           standaloneLinks: mergedStandalone,
         }
-        if (needsPersistSettings || needsPersistStandalone || needsPersistLayout) {
+        if (
+          needsPersistSettings ||
+          needsPersistStandalone ||
+          needsPersistLayout
+        ) {
           chrome.storage.sync.set({ [APP_STATE_STORAGE_KEY]: appState })
         }
       }
@@ -130,7 +132,9 @@ export function useStorage() {
     return () => chrome.storage.onChanged.removeListener(onSync)
   }, [])
 
-  const save = (newStateOrUpdater: AppState | ((prev: AppState) => AppState)) => {
+  const save = (
+    newStateOrUpdater: AppState | ((prev: AppState) => AppState)
+  ) => {
     hasUserSavedRef.current = true
     setState((prev) => {
       const newState =

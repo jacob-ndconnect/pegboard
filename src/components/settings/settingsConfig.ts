@@ -91,7 +91,7 @@ export const SETTINGS_SECTIONS: SettingsSection[] = [
         description:
           "Type this in the address bar to search pinned links. To change it: right-click the address bar → Manage search engines → find PegBoard under Search engines.",
         type: "info",
-        infoValue: "pin",
+        infoValue: "pb",
       },
     ],
   },

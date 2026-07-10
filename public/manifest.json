@@ -7,7 +7,7 @@
     "newtab": "index.html"
   },
   "permissions": ["storage", "favicon", "contextMenus"],
-  "omnibox": { "keyword": "pin" },
+  "omnibox": { "keyword": "pb" },
   "background": {
     "service_worker": "background.js"
   },
