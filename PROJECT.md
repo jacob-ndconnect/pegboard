@@ -1,4 +1,4 @@
-# Pegboard — Project Reference
+# PegBoard — Project Reference
 
 A Chrome extension that replaces the default new tab page with a customizable command center. Users organize links into sections, view them in Canvas (free-form drag) or List layout, and search via a configurable shortcut (default Cmd/Ctrl+K). A separate shortcut opens Settings (default Mod+,).
 
@@ -20,14 +20,14 @@ A Chrome extension that replaces the default new tab page with a customizable co
 
 **Location:** `src/types/index.ts`
 
-| Type              | Description                                                                                    |
-| ----------------- | ---------------------------------------------------------------------------------------------- |
-| `Link`            | `id`, `url`, `label`, optional `searchTerms` (palette search only), optional `badge`, optional `customIcon` (unused in UI yet) |
-| `Section`         | `id`, `name`, `accentColor`, `links[]`, `position` (`x`, `y` for Canvas), optional `canvasColumnSpan` (link **tiles per row** on canvas; default = link count; width math in `canvasGrid.ts` — tile stride matches `LinkCard` + `SectionLinkDraggable` spacing) |
-| `SectionLabelSize`| Tailwind text classes (`text-xs` … `text-3xl`) for canvas section title typography              |
-| `Settings`        | `searchShortcut`, `settingsShortcut`, `sectionLabelSize`, `canvasRememberScroll`, `canvasScrollSync`, `canvasRestoreScrollOnResize` |
-| `AppState`        | `sections[]`, `layoutMode` ("canvas" \| "list"), `editMode`, `settings`                        |
-| `BadgeStyle`      | `emoji`, `color` (hex)                                                                         |
+| Type               | Description                                                                                                                                                                                                                                                     |
+| ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Link`             | `id`, `url`, `label`, optional `searchTerms` (palette search only), optional `badge`, optional `customIcon` (unused in UI yet)                                                                                                                                  |
+| `Section`          | `id`, `name`, `accentColor`, `links[]`, `position` (`x`, `y` for Canvas), optional `canvasColumnSpan` (link **tiles per row** on canvas; default = link count; width math in `canvasGrid.ts` — tile stride matches `LinkCard` + `SectionLinkDraggable` spacing) |
+| `SectionLabelSize` | Tailwind text classes (`text-xs` … `text-3xl`) for canvas section title typography                                                                                                                                                                              |
+| `Settings`         | `searchShortcut`, `settingsShortcut`, `sectionLabelSize`, `canvasRememberScroll`, `canvasScrollSync`, `canvasRestoreScrollOnResize`                                                                                                                             |
+| `AppState`         | `sections[]`, `layoutMode` ("canvas" \| "list"), `editMode`, `settings`                                                                                                                                                                                         |
+| `BadgeStyle`       | `emoji`, `color` (hex)                                                                                                                                                                                                                                          |
 
 ---
 
@@ -238,14 +238,14 @@ Theme context (dark/light/system), localStorage persistence, system preference l
 
 ## Lib Utilities
 
-| File                        | Exports                         | Purpose                                      |
-| --------------------------- | ------------------------------- | -------------------------------------------- |
-| `src/lib/utils.ts`          | `cn(...)`                       | `clsx` + `tailwind-merge` for class names    |
+| File                            | Exports                                                                          | Purpose                                                   |
+| ------------------------------- | -------------------------------------------------------------------------------- | --------------------------------------------------------- |
+| `src/lib/utils.ts`              | `cn(...)`                                                                        | `clsx` + `tailwind-merge` for class names                 |
 | `src/lib/canvasScrollAnchor.ts` | `readCanvasScrollAnchor`, `writeCanvasScrollAnchor`, `applyScrollToCenter`, etc. | Canvas scroll anchor in `storage.local` / optional `sync` |
-| `src/lib/favicon.ts`        | `getFaviconUrl`, `getFaviconFallbackUrl` | Favicon URLs for a link’s domain      |
-| `src/lib/url.ts`            | `getDomain(url)`                | Hostname without `www.`                      |
-| `src/lib/color-swatches.ts` | `COLOR_SWATCHES`                | Preset hex colors for pickers                |
-| `src/lib/color.ts`          | `getContrastColor`              | Text color on colored section headers        |
+| `src/lib/favicon.ts`            | `getFaviconUrl`, `getFaviconFallbackUrl`                                         | Favicon URLs for a link’s domain                          |
+| `src/lib/url.ts`                | `getDomain(url)`                                                                 | Hostname without `www.`                                   |
+| `src/lib/color-swatches.ts`     | `COLOR_SWATCHES`                                                                 | Preset hex colors for pickers                             |
+| `src/lib/color.ts`              | `getContrastColor`                                                               | Text color on colored section headers                     |
 
 ---
 

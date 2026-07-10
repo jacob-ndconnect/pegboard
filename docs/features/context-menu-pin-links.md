@@ -2,11 +2,11 @@
 
 ## Goal
 
-Let users add the current tab’s URL (or a link’s URL from context) into Pegboard data without opening the new tab page first.
+Let users add the current tab’s URL (or a link’s URL from context) into PegBoard data without opening the new tab page first.
 
 ## Implemented (v1)
 
-- **Menu:** “Pin to Pegboard” on **page** and **link** contexts, registered from [`src/background.ts`](../../src/background.ts) on `chrome.runtime.onInstalled` (after `removeAll` to avoid duplicate items on reload).
+- **Menu:** “Pin to PegBoard” on **page** and **link** contexts, registered from [`src/background.ts`](../../src/background.ts) on `chrome.runtime.onInstalled` (after `removeAll` to avoid duplicate items on reload).
 - **Target:** New pins go to **ungrouped** only — appended to `AppState.standaloneLinks` with canvas spawn position from [`standaloneSpawnPosition`](../../src/lib/standaloneSpawnPosition.ts). Users can move links into a section from the new tab UI ([`moveLinkInState`](../../src/lib/linkMove.ts)).
 - **Merge / dedupe:** [`appendStandalonePin`](../../src/lib/appendStandalonePin.ts) — http(s) only; **dedupes** by canonical URL (origin + path without trailing slash + search + hash) against all section links and standalone links.
 - **Labels:** Page context uses `tab.title` when present; link context falls back to hostname (same idea as editor fallbacks).

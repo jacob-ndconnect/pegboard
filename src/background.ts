@@ -66,7 +66,9 @@ function coalesceAppState(raw: unknown): AppState {
     sections: Array.isArray(r.sections) ? r.sections : [],
     standaloneLinks: Array.isArray(r.standaloneLinks) ? r.standaloneLinks : [],
     layoutMode:
-      r.layoutMode === "list" || r.layoutMode === "folders" || r.layoutMode === "canvas"
+      r.layoutMode === "list" ||
+      r.layoutMode === "folders" ||
+      r.layoutMode === "canvas"
         ? r.layoutMode
         : DEFAULT_APP_STATE.layoutMode,
     editMode: r.editMode === true,
@@ -78,7 +80,7 @@ function registerContextMenus(): void {
   chrome.contextMenus.removeAll(() => {
     chrome.contextMenus.create({
       id: CONTEXT_MENU_PIN_ID,
-      title: "Pin to Pegboard",
+      title: "Pin to PegBoard",
       contexts: ["page", "link"],
     })
   })
@@ -105,7 +107,9 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
   })
 })
 
-chrome.omnibox.setDefaultSuggestion({ description: "Type to search pinned links" })
+chrome.omnibox.setDefaultSuggestion({
+  description: "Type to search pinned links",
+})
 
 chrome.omnibox.onInputChanged.addListener((text, suggest) => {
   chrome.storage.sync.get(APP_STATE_STORAGE_KEY, (result) => {
@@ -116,7 +120,9 @@ chrome.omnibox.onInputChanged.addListener((text, suggest) => {
     const suggestions = matches.map((link) => {
       const domain = getDomain(link.url)
       const display = link.searchTerms ?? link.label
-      const desc = domain ? `${escapeXml(display)} — ${escapeXml(domain)}` : escapeXml(display)
+      const desc = domain
+        ? `${escapeXml(display)} — ${escapeXml(domain)}`
+        : escapeXml(display)
       return { content: link.url, description: desc }
     })
     if (matches.length > 0) {
@@ -124,7 +130,9 @@ chrome.omnibox.onInputChanged.addListener((text, suggest) => {
       chrome.omnibox.setDefaultSuggestion({ description: firstDesc })
       suggest(suggestions.slice(1))
     } else {
-      chrome.omnibox.setDefaultSuggestion({ description: "Type to search pinned links" })
+      chrome.omnibox.setDefaultSuggestion({
+        description: "Type to search pinned links",
+      })
       suggest([])
     }
   })

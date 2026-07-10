@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "Pegboard",
+  "name": "PegBoard",
   "version": "1.0.0",
   "description": "Personal new tab launcher with sections, badges, and search",
   "chrome_url_overrides": {
