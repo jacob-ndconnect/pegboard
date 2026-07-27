@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "tsc -b && vite build --watch",
     "build": "tsc -b && vite build",
+    "zip": "powershell Compress-Archive -Path dist/* -DestinationPath extension.zip -Force",
     "lint": "eslint .",
     "format": "prettier --write \"**/*.{ts,tsx}\"",
     "typecheck": "tsc --noEmit",
