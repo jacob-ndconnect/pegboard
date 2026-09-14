@@ -12,7 +12,7 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs-classic"
-import type { Settings } from "@/types"
+import type { AppState, Settings } from "@/types"
 import { SETTINGS_SECTIONS } from "./settingsConfig"
 import type { SettingConfig } from "./settingsConfig"
 import { BooleanSetting } from "./BooleanSetting"
@@ -23,8 +23,10 @@ import { SelectSetting } from "./SelectSetting"
 type SettingsModalProps = {
   open: boolean
   onOpenChange: (open: boolean) => void
+  state: AppState
   settings: Settings
   onSave: (settings: Settings) => void
+  onReplaceState: (state: AppState) => void
 }
 
 function renderSetting(
@@ -89,8 +91,10 @@ function renderSetting(
 export function SettingsModal({
   open,
   onOpenChange,
+  state,
   settings,
   onSave,
+  onReplaceState,
 }: SettingsModalProps) {
   const handleSettingChange = useCallback(
     (key: keyof Settings, value: string | boolean) => {
@@ -154,7 +158,10 @@ export function SettingsModal({
                   className="mt-0 flex flex-col gap-6"
                 >
                   {section.Content ? (
-                    <section.Content />
+                    <section.Content
+                      state={state}
+                      onReplaceState={onReplaceState}
+                    />
                   ) : (
                     section.settings?.map((config) =>
                       renderSetting(config, settings, handleSettingChange)

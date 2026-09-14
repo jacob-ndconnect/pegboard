@@ -265,8 +265,10 @@ export function App() {
       <SettingsModal
         open={settingsOpen}
         onOpenChange={setSettingsOpen}
+        state={state}
         settings={state.settings}
         onSave={(settings) => save((prev) => ({ ...prev, settings }))}
+        onReplaceState={(next) => save({ ...next, editMode: false })}
       />
       <SectionEditor
         open={sectionEditorOpen}

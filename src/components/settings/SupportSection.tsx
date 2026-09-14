@@ -1,8 +1,14 @@
+import type { AppState } from "@/types"
 import { CoffeeIcon } from "@phosphor-icons/react"
 import { Button } from "@/components/ui/button"
 import { SUPPORT_CONFIG } from "./settingsConfig"
 
-export function SupportSectionContent() {
+type SupportSectionContentProps = {
+  state: AppState
+  onReplaceState: (state: AppState) => void
+}
+
+export function SupportSectionContent(_props: SupportSectionContentProps) {
   const config = SUPPORT_CONFIG
   return (
     <div className="flex flex-col gap-6">

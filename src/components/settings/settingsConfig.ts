@@ -1,12 +1,14 @@
 import type { ComponentType, ElementType } from "react"
 import {
   CloudArrowUpIcon,
+  DatabaseIcon,
   HeartIcon,
   KeyboardIcon,
   PaintBrushIcon,
 } from "@phosphor-icons/react"
-import type { Settings } from "@/types"
+import type { AppState, Settings } from "@/types"
 import { SupportSectionContent } from "./SupportSection"
+import { DataSectionContent } from "./DataSection"
 
 //IMAGES
 import devAvatar from "@/assets/me_and_meebo.jpg"
@@ -53,7 +55,7 @@ export type SettingsSection = {
   label: string
   icon?: ElementType
   settings?: SettingConfig[]
-  Content?: ComponentType
+  Content?: ComponentType<{ state: AppState; onReplaceState: (state: AppState) => void }>
 }
 
 // Support section config — update with your details
@@ -136,6 +138,12 @@ export const SETTINGS_SECTIONS: SettingsSection[] = [
         type: "boolean",
       },
     ],
+  },
+  {
+    id: "data",
+    label: "Data",
+    icon: DatabaseIcon,
+    Content: DataSectionContent,
   },
   {
     id: "support",

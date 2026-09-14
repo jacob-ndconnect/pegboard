@@ -68,7 +68,7 @@ Root component. Responsibilities:
 - **Returns:** `{ state, save, loaded }`
 - **Defaults:** `DEFAULT_SETTINGS` (shortcuts, section label size, canvas scroll + resize toggles) merged into stored `appState.settings` on load; missing keys are backfilled and re-persisted
 - **save:** Accepts `AppState` or `(prev: AppState) => AppState`; uses functional `setState` and `queueMicrotask` for storage write
-- **Migration:** `migrateSections` adds valid `position` for sections missing it (3-column grid)
+- **Migration:** Section positions / column span via [`normalizeAppState`](./src/lib/normalizeAppState.ts); settings defaults merged on load; backfill persisted when stored blob is incomplete
 - **Guard:** `hasUserSavedRef` prevents initial load from overwriting user saves if load callback runs late
 
 ### `src/hooks/useCanvasScrollAnchor.ts`
@@ -180,14 +180,14 @@ Single section: header (name, accent dot, edit button), horizontal scroll of `Li
 
 #### `SettingsModal.tsx`
 
-Dialog with vertical **Tabs**: Keyboard, Appearance, Sync, Support.
+Dialog with vertical **Tabs**: Keyboard, Appearance, Sync, Data, Support.
 
 - Receives `settings` and `onSave` from `App`; each change calls `onSave({ ...settings, [key]: value })`
 - Renders rows from `settingsConfig.ts` (`SETTINGS_SECTIONS`) via `HotkeySetting`, `SelectSetting`, `BooleanSetting`, `InfoSetting`, or custom `Content` (Support tab)
 
 #### `settingsConfig.ts`
 
-- Defines tab sections: shortcuts + omnibox info (**Keyboard**), **Section label size** (**Appearance**), canvas scroll persistence (**Sync**), and **Support** content
+- Defines tab sections: shortcuts + omnibox info (**Keyboard**), **Section label size** (**Appearance**), canvas scroll persistence (**Sync**), YAML export/import (**Data**), and **Support** content
 - **Support:** `SupportSection` + `SUPPORT_CONFIG` (links, avatar asset, etc.)
 
 ---
@@ -243,6 +243,8 @@ Theme context (dark/light/system), localStorage persistence, system preference l
 | ------------------------------- | -------------------------------------------------------------------------------- | --------------------------------------------------------- |
 | `src/lib/utils.ts`              | `cn(...)`                                                                        | `clsx` + `tailwind-merge` for class names                 |
 | `src/lib/canvasScrollAnchor.ts` | `readCanvasScrollAnchor`, `writeCanvasScrollAnchor`, `applyScrollToCenter`, etc. | Canvas scroll anchor in `storage.local` / optional `sync` |
+| `src/lib/normalizeAppState.ts`  | `normalizeAppState`, `applyStoredStateBackfill`, `migrateSections`             | Shared normalization for sync load and config import      |
+| `src/lib/pegboardConfig.ts`     | `serializeConfigYaml`, `parseConfigTextAsync`, `CONFIG_VERSION`                  | Versioned YAML export/import (`pegboard.yml`)             |
 | `src/lib/favicon.ts`            | `getFaviconUrl`, `getFaviconFallbackUrl`                                         | Favicon URLs for a link’s domain                          |
 | `src/lib/url.ts`                | `getDomain(url)`                                                                 | Hostname without `www.`                                   |
 | `src/lib/color-swatches.ts`     | `COLOR_SWATCHES`                                                                 | Preset hex colors for pickers                             |
@@ -276,9 +278,10 @@ Theme context (dark/light/system), localStorage persistence, system preference l
 
 1. **State updates:** Prefer `save((prev) => ({ ...prev, ... }))` to avoid stale closures.
 2. **Canvas drag:** Use `transform` from `useDraggable`, not `event.delta`, in scrollable containers.
-3. **Positions:** `normalizePosition` and `migrateSections` ensure valid `{x,y}`; invalid values get grid fallback.
+3. **Positions:** `normalizePosition` and [`migrateSections`](./src/lib/normalizeAppState.ts) ensure valid `{x,y}`; invalid values get grid fallback.
 4. **Extension:** `chrome.storage.sync` for `appState`; canvas scroll anchor uses `storage.local` (optional `sync`); `base: "./"` in Vite for extension asset paths.
-5. **Settings:** Defaults merged on load in `useStorage`; new `Settings` keys should be added to `DEFAULT_SETTINGS` and optionally to `settingsConfig` UI.
+5. **Settings:** Defaults merged on load via [`normalizeAppState`](./src/lib/normalizeAppState.ts); new `Settings` keys go in `DEFAULT_SETTINGS` and optionally `settingsConfig` UI.
+6. **Portability:** Export/import YAML from Settings → Data; bump `CONFIG_VERSION` in [`pegboardConfig.ts`](./src/lib/pegboardConfig.ts) when the file schema changes; app-level renames in `normalizeAppState`.
 
 ---
 
@@ -309,6 +312,7 @@ src/
 │   ├── settings/
 │   │   ├── SettingsModal.tsx
 │   │   ├── settingsConfig.ts
+│   │   ├── DataSection.tsx
 │   │   ├── BooleanSetting.tsx
 │   │   ├── HotkeySetting.tsx
 │   │   ├── SelectSetting.tsx
@@ -325,6 +329,8 @@ src/
 └── lib/
     ├── utils.ts
     ├── canvasScrollAnchor.ts
+    ├── normalizeAppState.ts
+    ├── pegboardConfig.ts
     ├── favicon.ts
     ├── url.ts
     ├── color.ts
