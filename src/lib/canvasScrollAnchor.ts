@@ -3,6 +3,7 @@
 export const CANVAS_SCROLL_ANCHOR_STORAGE_KEY = "canvasScrollAnchor"
 
 export type CanvasScrollAnchor = {
+  /** Point on the placement board (item space), not including viewport pad. */
   centerX: number
   centerY: number
 }
@@ -57,21 +58,64 @@ export function clamp(n: number, min: number, max: number): number {
   return Math.min(Math.max(n, min), max)
 }
 
-/** Place the given content-space point at the viewport center (clamped). */
-export function applyScrollToCenter(
-  el: HTMLElement,
-  centerX: number,
-  centerY: number
-): void {
-  const maxL = Math.max(0, el.scrollWidth - el.clientWidth)
-  const maxT = Math.max(0, el.scrollHeight - el.clientHeight)
-  el.scrollLeft = clamp(centerX - el.clientWidth / 2, 0, maxL)
-  el.scrollTop = clamp(centerY - el.clientHeight / 2, 0, maxT)
+export type ViewportPad = { x: number; y: number }
+
+/** Half the scrollport — enough to put any board point at the viewport center. */
+export function viewportPadFromScrollEl(scrollEl: HTMLElement): ViewportPad {
+  return {
+    x: scrollEl.clientWidth / 2,
+    y: scrollEl.clientHeight / 2,
+  }
 }
 
-export function viewportCenterInContentSpace(el: HTMLElement): CanvasScrollAnchor {
+export function applyViewportPad(
+  padEl: HTMLElement,
+  pad: ViewportPad
+): void {
+  padEl.style.paddingLeft = `${pad.x}px`
+  padEl.style.paddingRight = `${pad.x}px`
+  padEl.style.paddingTop = `${pad.y}px`
+  padEl.style.paddingBottom = `${pad.y}px`
+}
+
+export function applyScrollToWorldCenter(
+  scrollEl: HTMLElement,
+  worldX: number,
+  worldY: number,
+  pad: ViewportPad
+): void {
+  const maxL = Math.max(0, scrollEl.scrollWidth - scrollEl.clientWidth)
+  const maxT = Math.max(0, scrollEl.scrollHeight - scrollEl.clientHeight)
+  scrollEl.scrollLeft = clamp(worldX + pad.x - scrollEl.clientWidth / 2, 0, maxL)
+  scrollEl.scrollTop = clamp(worldY + pad.y - scrollEl.clientHeight / 2, 0, maxT)
+}
+
+export function worldCenterFromViewport(
+  scrollEl: HTMLElement,
+  pad: ViewportPad
+): CanvasScrollAnchor {
   return {
-    centerX: el.scrollLeft + el.clientWidth / 2,
-    centerY: el.scrollTop + el.clientHeight / 2,
+    centerX: scrollEl.scrollLeft + scrollEl.clientWidth / 2 - pad.x,
+    centerY: scrollEl.scrollTop + scrollEl.clientHeight / 2 - pad.y,
+  }
+}
+
+export function measureCanvasBoardSize(
+  boardEl: HTMLElement,
+  slack = 80
+): { width: number; height: number } {
+  const rootRect = boardEl.getBoundingClientRect()
+  let maxX = 0
+  let maxY = 0
+  for (const child of boardEl.children) {
+    if (!(child instanceof HTMLElement)) continue
+    if (child.dataset.canvasChrome === "true") continue
+    const r = child.getBoundingClientRect()
+    maxX = Math.max(maxX, r.right - rootRect.left)
+    maxY = Math.max(maxY, r.bottom - rootRect.top)
+  }
+  return {
+    width: Math.max(Math.ceil(maxX + slack), 1),
+    height: Math.max(Math.ceil(maxY + slack), 1),
   }
 }

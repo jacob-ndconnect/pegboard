@@ -21,6 +21,7 @@ export function CanvasStandaloneDropLayer() {
     <>
       <div
         ref={setNodeRef}
+        data-canvas-chrome="true"
         className="pointer-events-auto absolute inset-0 z-0"
         aria-hidden
       />

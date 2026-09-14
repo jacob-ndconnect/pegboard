@@ -6,9 +6,11 @@ import {
   type RefObject,
 } from "react"
 import {
-  applyScrollToCenter,
+  applyScrollToWorldCenter,
+  applyViewportPad,
   readCanvasScrollAnchor,
-  viewportCenterInContentSpace,
+  viewportPadFromScrollEl,
+  worldCenterFromViewport,
   writeCanvasScrollAnchor,
 } from "@/lib/canvasScrollAnchor"
 
@@ -16,6 +18,7 @@ const DEBOUNCE_MS = 200
 
 type UseCanvasScrollAnchorOptions = {
   scrollRef: RefObject<HTMLElement | null>
+  padRef: RefObject<HTMLElement | null>
   contentRef: RefObject<HTMLElement | null>
   remember: boolean
   useSync: boolean
@@ -24,23 +27,44 @@ type UseCanvasScrollAnchorOptions = {
 
 export function useCanvasScrollAnchor({
   scrollRef,
+  padRef,
   contentRef,
   remember,
   useSync,
   restoreOnResize,
 }: UseCanvasScrollAnchorOptions) {
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  /** Content-space point that was at the viewport center before the latest scroll / restore — required for resize (re-reading center after resize uses wrong math if scrollLeft is unchanged). */
-  const lastContentCenterRef = useRef<{ centerX: number; centerY: number } | null>(
+  /** Board-space point that should sit at the viewport center. Never replaced by a clamped read. */
+  const lastWorldCenterRef = useRef<{ centerX: number; centerY: number } | null>(
     null
   )
+  const applyingRef = useRef(false)
   const reclampRafRef = useRef<number>(0)
+
+  const padAndApply = useCallback(
+    (worldX: number, worldY: number) => {
+      const scrollEl = scrollRef.current
+      const padEl = padRef.current
+      if (!scrollEl || !padEl) return
+      applyingRef.current = true
+      const pad = viewportPadFromScrollEl(scrollEl)
+      applyViewportPad(padEl, pad)
+      applyScrollToWorldCenter(scrollEl, worldX, worldY, pad)
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          applyingRef.current = false
+        })
+      })
+    },
+    [scrollRef, padRef]
+  )
 
   const persistNow = useCallback(() => {
     const el = scrollRef.current
-    if (!el || !remember) return
-    const anchor = viewportCenterInContentSpace(el)
-    lastContentCenterRef.current = anchor
+    if (!el || !remember || applyingRef.current) return
+    const pad = viewportPadFromScrollEl(el)
+    const anchor = worldCenterFromViewport(el, pad)
+    lastWorldCenterRef.current = anchor
     writeCanvasScrollAnchor(anchor, useSync)
   }, [remember, useSync, scrollRef])
 
@@ -58,17 +82,15 @@ export function useCanvasScrollAnchor({
     reclampRafRef.current = requestAnimationFrame(() => {
       reclampRafRef.current = 0
       requestAnimationFrame(() => {
-        const el = scrollRef.current
-        if (!el) return
-        if (!lastContentCenterRef.current) {
-          lastContentCenterRef.current = viewportCenterInContentSpace(el)
-        }
-        const c = lastContentCenterRef.current
-        applyScrollToCenter(el, c.centerX, c.centerY)
-        lastContentCenterRef.current = viewportCenterInContentSpace(el)
+        const scrollEl = scrollRef.current
+        const padEl = padRef.current
+        if (!scrollEl || !padEl) return
+        const c = lastWorldCenterRef.current
+        if (!c) return
+        padAndApply(c.centerX, c.centerY)
       })
     })
-  }, [scrollRef])
+  }, [scrollRef, padRef, padAndApply])
 
   useEffect(() => {
     if (!remember) return
@@ -77,16 +99,16 @@ export function useCanvasScrollAnchor({
 
     const run = async () => {
       const anchor = await readCanvasScrollAnchor(useSync)
-      if (cancelled || !scrollRef.current) return
+      if (cancelled || !scrollRef.current || !contentRef.current) return
       const apply = () => {
-        if (cancelled || !scrollRef.current) return
-        const t = scrollRef.current
-        if (anchor) {
-          applyScrollToCenter(t, anchor.centerX, anchor.centerY)
-        } else {
-          applyScrollToCenter(t, t.scrollWidth / 2, t.scrollHeight / 2)
+        if (cancelled || !scrollRef.current || !contentRef.current) return
+        const board = contentRef.current
+        const target = anchor ?? {
+          centerX: board.offsetWidth / 2,
+          centerY: board.offsetHeight / 2,
         }
-        lastContentCenterRef.current = viewportCenterInContentSpace(t)
+        lastWorldCenterRef.current = target
+        padAndApply(target.centerX, target.centerY)
       }
       requestAnimationFrame(() => {
         requestAnimationFrame(apply)
@@ -98,14 +120,33 @@ export function useCanvasScrollAnchor({
     return () => {
       cancelled = true
     }
-  }, [remember, useSync, scrollRef])
+  }, [remember, useSync, scrollRef, contentRef, padAndApply])
+
+  useLayoutEffect(() => {
+    const scrollEl = scrollRef.current
+    const padEl = padRef.current
+    if (!scrollEl || !padEl) return
+    const syncPad = () => {
+      applyViewportPad(padEl, viewportPadFromScrollEl(scrollEl))
+    }
+    syncPad()
+    const ro = new ResizeObserver(syncPad)
+    ro.observe(scrollEl)
+    window.addEventListener("resize", syncPad, { passive: true })
+    return () => {
+      ro.disconnect()
+      window.removeEventListener("resize", syncPad)
+    }
+  }, [scrollRef, padRef])
 
   useLayoutEffect(() => {
     if (!remember) return
     const el = scrollRef.current
     if (!el) return
     const onScroll = () => {
-      lastContentCenterRef.current = viewportCenterInContentSpace(el)
+      if (applyingRef.current) return
+      const pad = viewportPadFromScrollEl(el)
+      lastWorldCenterRef.current = worldCenterFromViewport(el, pad)
       schedulePersist()
     }
     el.addEventListener("scroll", onScroll, { passive: true })
@@ -140,12 +181,12 @@ export function useCanvasScrollAnchor({
   useLayoutEffect(() => {
     if (!remember || !restoreOnResize) return
     const scrollEl = scrollRef.current
-    const contentEl = contentRef.current
-    if (!scrollEl || !contentEl) return
+    const boardEl = contentRef.current
+    if (!scrollEl || !boardEl) return
 
     const ro = new ResizeObserver(scheduleReclampForResize)
     ro.observe(scrollEl)
-    ro.observe(contentEl)
+    ro.observe(boardEl)
     window.addEventListener("resize", scheduleReclampForResize, { passive: true })
 
     return () => {

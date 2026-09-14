@@ -110,6 +110,7 @@ Root component. Responsibilities:
 **Files:** `src/background.ts` (built to `background.js`), `public/manifest.json`
 
 - **Manifest:** `"omnibox": { "keyword": "pb" }` — changing the keyword requires editing the manifest / repacking the extension; Settings shows an **info** row explaining Chrome’s “Manage search engines” flow
+- **Icons:** `public/icons/icon{16,32,48,128}.png` (the B mark). The new-tab tab favicon is separate (`index.html` → `favicon.svg` / `favicon.ico`). Context menus use the 16×16 in color. The omnibox keyword chip (gray icon next to the name after typing `pb`) is owned by Chrome — there is no `chrome.omnibox` icon API. Chrome loads that bitmap once via its omnibox icon manager / search-engine entry; **Reload on `chrome://extensions` often keeps the old chip.** To refresh it: Remove the unpacked extension, Load unpacked again (loads from `dist/` after `npm run build`), then fully quit Chrome. Optional: `chrome://settings/searchEngines` and confirm the PegBoard/`pb` engine isn’t a leftover with a stale favicon.
 - **Behavior:** On input, reads `chrome.storage.sync` under the same `appState` key as the new tab page, filters links by label / domain / `searchTerms`, suggests matches; Enter navigates current or new tab based on disposition
 - **Types:** Background uses a minimal `AppState` shape (sections + links); keep in sync when adding top-level fields the omnibox should ignore or use
 

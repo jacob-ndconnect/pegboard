@@ -1,4 +1,4 @@
-import { useCallback, useRef, type RefObject } from "react"
+import { useCallback, useLayoutEffect, useRef, useState, type RefObject } from "react"
 import { useCanvasPointerPan } from "@/hooks/useCanvasPointerPan"
 import { useCanvasScrollAnchor } from "@/hooks/useCanvasScrollAnchor"
 import {
@@ -17,6 +17,7 @@ import { preferSectionOverStandalone } from "@/components/dnd/preferSectionDropC
 import { applyLinkDragEnd } from "@/lib/applyLinkDragEnd"
 import { getDefaultCanvasSectionPosition } from "@/lib/canvasGrid"
 import { standalonePositionFromTranslatedRect } from "@/lib/canvasDropPosition"
+import { measureCanvasBoardSize } from "@/lib/canvasScrollAnchor"
 import { CanvasStandaloneDropLayer } from "./CanvasStandaloneDropLayer"
 import { FloatingLinkCard } from "./FloatingLinkCard"
 import { SectionFrame } from "./SectionFrame"
@@ -96,10 +97,22 @@ export function Canvas({
   const transformRef = useRef<{ x: number; y: number } | null>(null)
   const startPositionRef = useRef<{ x: number; y: number } | null>(null)
   const placementRootRef = useRef<HTMLDivElement | null>(null)
+  const padRef = useRef<HTMLDivElement | null>(null)
   const scrollContainerRef = useRef<HTMLDivElement | null>(null)
+  const [boardSize, setBoardSize] = useState({ width: 1, height: 1 })
+
+  useLayoutEffect(() => {
+    const board = placementRootRef.current
+    if (!board) return
+    const next = measureCanvasBoardSize(board)
+    setBoardSize((prev) =>
+      prev.width === next.width && prev.height === next.height ? prev : next
+    )
+  }, [sections, standaloneLinks, editMode])
 
   useCanvasScrollAnchor({
     scrollRef: scrollContainerRef,
+    padRef,
     contentRef: placementRootRef,
     remember: settings.canvasRememberScroll,
     useSync: settings.canvasScrollSync,
@@ -213,49 +226,53 @@ export function Canvas({
         )}
       >
 
-        <div
-          ref={placementRootRef}
-          className="relative"
-          style={{
-            minHeight: "max(100vh, 1200px)",
-            minWidth: "max(100vw, 1200px)",
-          }}
-        >
+        <div ref={padRef} className="relative box-border w-max">
           <CanvasStandaloneDropLayer />
-          {sectionsWithPosition.map((section) => (
-            <SectionFrame
-              key={section.id}
-              section={section}
-              editMode={editMode}
-              isDraggable={!DRAGGABLE_ONLY_IN_EDIT || editMode}
-              sectionLabelSize={settings.sectionLabelSize}
-              onEditSection={() => onEditSection(section)}
-              onEditLink={(linkId) => onEditLink(section.id, linkId)}
-              onAddLink={() => onAddLink(section.id)}
-              onCanvasColumnSpanChange={(span) => {
-                save((prev) => ({
-                  ...prev,
-                  sections: prev.sections.map((s) =>
-                    s.id === section.id
-                      ? { ...s, canvasColumnSpan: span }
-                      : s
-                  ),
-                }))
-              }}
-              onDragEnd={() => {}}
-              onTransformChange={handleTransformChange}
-            />
-          ))}
-          {standaloneWithPosition.map((entry) => (
-            <FloatingLinkCard
-              key={entry.link.id}
-              entry={entry}
-              editMode={editMode}
-              isDraggable={!DRAGGABLE_ONLY_IN_EDIT || editMode}
-              onEdit={() => onEditStandaloneLink(entry.link.id)}
-              onTransformChange={handleTransformChange}
-            />
-          ))}
+          <div
+            ref={placementRootRef}
+            className="relative z-[1]"
+            style={{
+              width: boardSize.width,
+              height: boardSize.height,
+              minWidth: boardSize.width,
+              minHeight: boardSize.height,
+            }}
+          >
+            {sectionsWithPosition.map((section) => (
+              <SectionFrame
+                key={section.id}
+                section={section}
+                editMode={editMode}
+                isDraggable={!DRAGGABLE_ONLY_IN_EDIT || editMode}
+                sectionLabelSize={settings.sectionLabelSize}
+                onEditSection={() => onEditSection(section)}
+                onEditLink={(linkId) => onEditLink(section.id, linkId)}
+                onAddLink={() => onAddLink(section.id)}
+                onCanvasColumnSpanChange={(span) => {
+                  save((prev) => ({
+                    ...prev,
+                    sections: prev.sections.map((s) =>
+                      s.id === section.id
+                        ? { ...s, canvasColumnSpan: span }
+                        : s
+                    ),
+                  }))
+                }}
+                onDragEnd={() => {}}
+                onTransformChange={handleTransformChange}
+              />
+            ))}
+            {standaloneWithPosition.map((entry) => (
+              <FloatingLinkCard
+                key={entry.link.id}
+                entry={entry}
+                editMode={editMode}
+                isDraggable={!DRAGGABLE_ONLY_IN_EDIT || editMode}
+                onEdit={() => onEditStandaloneLink(entry.link.id)}
+                onTransformChange={handleTransformChange}
+              />
+            ))}
+          </div>
         </div>
       </div>
     </DndContext>

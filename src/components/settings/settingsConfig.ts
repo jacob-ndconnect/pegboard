@@ -132,7 +132,7 @@ export const SETTINGS_SECTIONS: SettingsSection[] = [
         id: "canvasRestoreScrollOnResize",
         label: "Keep center on resize",
         description:
-          "When the window is resized, adjust scroll so the same canvas point stays at the viewport center.",
+          "When the window is resized, keep the same canvas point at the viewport center, even if the window is larger than the items.",
         type: "boolean",
       },
     ],
