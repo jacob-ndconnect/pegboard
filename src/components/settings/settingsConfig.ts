@@ -23,6 +23,12 @@ const SECTION_LABEL_SIZE_OPTIONS = [
   { value: "text-3xl", label: "3XL" },
 ] as const
 
+export const THEME_OPTIONS = [
+  { value: "light", label: "Light" },
+  { value: "dark", label: "Dark" },
+  { value: "system", label: "System" },
+] as const
+
 export type SettingConfig =
   | {
       id: keyof Settings
@@ -37,6 +43,12 @@ export type SettingConfig =
       description?: string
       type: "info"
       infoValue: string
+    }
+  | {
+      id: "theme"
+      label: string
+      description?: string
+      type: "theme"
     }
 
 export type SupportLink = {
@@ -102,6 +114,13 @@ export const SETTINGS_SECTIONS: SettingsSection[] = [
     label: "Appearance",
     icon: PaintBrushIcon,
     settings: [
+      {
+        id: "theme",
+        label: "Theme",
+        description:
+          "Light, dark, or match the system. D on the new tab page also toggles light/dark.",
+        type: "theme",
+      },
       {
         id: "sectionLabelSize",
         label: "Section label size",

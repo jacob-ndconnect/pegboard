@@ -13,12 +13,37 @@ import {
   TabsTrigger,
 } from "@/components/ui/tabs-classic"
 import type { AppState, Settings } from "@/types"
-import { SETTINGS_SECTIONS } from "./settingsConfig"
+import { useTheme } from "@/components/theme-provider"
+import { SETTINGS_SECTIONS, THEME_OPTIONS } from "./settingsConfig"
 import type { SettingConfig } from "./settingsConfig"
 import { BooleanSetting } from "./BooleanSetting"
 import { HotkeySetting } from "./HotkeySetting"
 import { InfoSetting } from "./InfoSetting"
 import { SelectSetting } from "./SelectSetting"
+
+function ThemeSetting({
+  label,
+  description,
+}: {
+  label: string
+  description?: string
+}) {
+  const { theme, setTheme } = useTheme()
+  return (
+    <SelectSetting
+      id="theme"
+      label={label}
+      description={description}
+      value={theme}
+      options={THEME_OPTIONS}
+      onChange={(value) => {
+        if (value === "light" || value === "dark" || value === "system") {
+          setTheme(value)
+        }
+      }}
+    />
+  )
+}
 
 type SettingsModalProps = {
   open: boolean
@@ -34,6 +59,15 @@ function renderSetting(
   settings: Settings,
   onChange: (key: keyof Settings, value: string | boolean) => void
 ) {
+  if (config.type === "theme") {
+    return (
+      <ThemeSetting
+        key={config.id}
+        label={config.label}
+        description={config.description}
+      />
+    )
+  }
   if (config.type === "hotkey") {
     return (
       <HotkeySetting

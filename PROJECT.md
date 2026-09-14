@@ -183,11 +183,11 @@ Single section: header (name, accent dot, edit button), horizontal scroll of `Li
 Dialog with vertical **Tabs**: Keyboard, Appearance, Sync, Data, Support.
 
 - Receives `settings` and `onSave` from `App`; each change calls `onSave({ ...settings, [key]: value })`
-- Renders rows from `settingsConfig.ts` (`SETTINGS_SECTIONS`) via `HotkeySetting`, `SelectSetting`, `BooleanSetting`, `InfoSetting`, or custom `Content` (Support tab)
+- Renders rows from `settingsConfig.ts` (`SETTINGS_SECTIONS`) via `HotkeySetting`, `SelectSetting`, `BooleanSetting`, `InfoSetting`, theme select (`useTheme`), or custom `Content` (Data / Support)
 
 #### `settingsConfig.ts`
 
-- Defines tab sections: shortcuts + omnibox info (**Keyboard**), **Section label size** (**Appearance**), canvas scroll persistence (**Sync**), YAML export/import (**Data**), and **Support** content
+- Defines tab sections: shortcuts + omnibox info (**Keyboard**), **Theme** (localStorage via `ThemeProvider`, not `AppState.settings`) + **Section label size** (**Appearance**), canvas scroll persistence (**Sync**), YAML export/import (**Data**), and **Support** content
 - **Support:** `SupportSection` + `SUPPORT_CONFIG` (links, avatar asset, etc.)
 
 ---
