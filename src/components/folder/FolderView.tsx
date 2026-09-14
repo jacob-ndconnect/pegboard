@@ -74,7 +74,10 @@ function LinkMicroThumb({ link }: { link: Link }) {
         <img
           src={src}
           alt=""
-          className="size-full object-cover"
+          className={cn(
+            "size-full object-cover",
+            link.invertIcon && "dark:invert"
+          )}
           onError={() => setFailed(true)}
         />
       )}

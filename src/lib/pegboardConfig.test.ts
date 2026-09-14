@@ -44,6 +44,28 @@ describe("migrateConfigDocument", () => {
     expect(doc.sections[0]?.links[0]?.id).toBeTruthy()
     expect(doc.ungrouped[0]?.id).toBeTruthy()
   })
+
+  it("keeps invertIcon when true", () => {
+    const doc = migrateConfigDocument({
+      version: 1,
+      layout: "canvas",
+      settings: {},
+      sections: [
+        {
+          name: "Work",
+          links: [
+            {
+              url: "https://a.com",
+              label: "A",
+              invertIcon: true,
+            },
+          ],
+        },
+      ],
+      ungrouped: [],
+    })
+    expect(doc.sections[0]?.links[0]?.invertIcon).toBe(true)
+  })
 })
 
 describe("configDocumentToAppState", () => {

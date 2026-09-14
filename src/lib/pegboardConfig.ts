@@ -67,6 +67,9 @@ function coerceLink(raw: unknown, assignId: boolean): Link | null {
   if (typeof raw.customIcon === "string" && raw.customIcon.length > 0) {
     link.customIcon = raw.customIcon
   }
+  if (raw.invertIcon === true) {
+    link.invertIcon = true
+  }
   return link
 }
 

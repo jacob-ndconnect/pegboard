@@ -9,6 +9,7 @@ export type Link = {
   label: string // custom display name
   searchTerms?: string // optional; used for CommandPalette search
   badge?: BadgeStyle // optional corner badge
+  invertIcon?: boolean // invert favicon in dark mode (transparent dark glyphs)
   customIcon?: string // optional base64 or URL for custom icon (future)
 }
 

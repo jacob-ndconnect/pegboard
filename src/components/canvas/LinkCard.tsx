@@ -143,7 +143,10 @@ export function LinkCard({
                 src={currentSrc}
                 alt=""
                 draggable={editMode ? false : undefined}
-                className="size-full object-cover"
+                className={cn(
+                  "size-full object-cover",
+                  link.invertIcon && "dark:invert"
+                )}
                 onError={handleFaviconError}
               />
             )}

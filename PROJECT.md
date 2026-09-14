@@ -22,7 +22,7 @@ A Chrome extension that replaces the default new tab page with a customizable co
 
 | Type               | Description                                                                                                                                                                                                                                                     |
 | ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `Link`             | `id`, `url`, `label`, optional `searchTerms` (palette search only), optional `badge`, optional `customIcon` (unused in UI yet)                                                                                                                                  |
+| `Link`             | `id`, `url`, `label`, optional `searchTerms` (palette search only), optional `badge`, optional `invertIcon` (favicon CSS invert in dark mode), optional `customIcon` (unused in UI yet)                                                                                                                                         |
 | `Section`          | `id`, `name`, `accentColor`, `links[]`, `position` (`x`, `y` for Canvas), optional `canvasColumnSpan` (link **tiles per row** on canvas; default = link count; width math in `canvasGrid.ts` — tile stride matches `LinkCard` + `SectionLinkDraggable` spacing) |
 | `SectionLabelSize` | Tailwind text classes (`text-xs` … `text-3xl`) for canvas section title typography                                                                                                                                                                              |
 | `Settings`         | `searchShortcut`, `settingsShortcut`, `sectionLabelSize`, `canvasRememberScroll`, `canvasScrollSync`, `canvasRestoreScrollOnResize`                                                                                                                             |
@@ -148,7 +148,7 @@ iOS-style link card: favicon or letter placeholder, optional badge, label.
 
 - **Edit mode:** Click opens editor; hover shows pencil overlay; top-right pencil button is always visible when `onEdit` is passed
 - **View mode:** Click navigates to `link.url`; same pencil appears on hover (`onEdit`)
-- **Favicon:** `getFaviconUrl` / `getFaviconFallbackUrl` from `src/lib/favicon.ts`; fallback to first letter with generated color
+- **Favicon:** `getFaviconUrl` / `getFaviconFallbackUrl` from `src/lib/favicon.ts`; fallback to first letter with generated color. Optional `link.invertIcon` applies Tailwind `dark:invert` on the image.
 
 ---
 
@@ -215,7 +215,7 @@ Dialog for create/edit section.
 
 Dialog for create/edit link.
 
-- **Fields:** URL, label, optional **Search terms** (Mod+K / palette only; not shown on cards), badge emoji (max 2 chars), badge color
+- **Fields:** URL, label, optional **Search terms** (Mod+K / palette only; not shown on cards), badge emoji (max 2 chars), badge color, **Invert icon in dark mode**
 - **Preview:** `LinkCard`
 - **Delete:** Only when editing an existing link
 

@@ -9,6 +9,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { ColorPickerField } from "./ColorPickerField"
+import { BooleanSetting } from "@/components/settings/BooleanSetting"
 import { LinkCard } from "@/components/canvas/LinkCard"
 import type { Link } from "@/types"
 import { FloppyDiskIcon, TrashIcon } from "@phosphor-icons/react/dist/ssr"
@@ -37,6 +38,7 @@ export function LinkEditor({
   const [badgeColor, setBadgeColor] = useState(
     () => link?.badge?.color ?? DEFAULT_BADGE_COLOR
   )
+  const [invertIcon, setInvertIcon] = useState(() => link?.invertIcon === true)
 
   const previewLink: Link = {
     id: link?.id ?? "preview",
@@ -46,6 +48,7 @@ export function LinkEditor({
       badgeEmoji.trim().length > 0
         ? { emoji: badgeEmoji.slice(0, 2), color: badgeColor }
         : undefined,
+    invertIcon: invertIcon || undefined,
   }
 
   const handleSave = () => {
@@ -62,6 +65,8 @@ export function LinkEditor({
         badgeEmoji.trim().length > 0
           ? { emoji: badgeEmoji.slice(0, 2), color: badgeColor }
           : undefined,
+      ...(invertIcon ? { invertIcon: true } : {}),
+      ...(link?.customIcon ? { customIcon: link.customIcon } : {}),
     })
     onOpenChange(false)
   }
@@ -152,6 +157,13 @@ export function LinkEditor({
               label="Badge color"
             />
           )}
+          <BooleanSetting
+            id="link-invert-icon"
+            label="Invert icon in dark mode"
+            description="Use for dark glyphs on a transparent background."
+            checked={invertIcon}
+            onChange={setInvertIcon}
+          />
           <div className="flex flex-col gap-2">
             <span className="text-xs font-medium text-muted-foreground">
               Preview
