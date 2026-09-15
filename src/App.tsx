@@ -22,6 +22,8 @@ import {
   shouldShowWhatsNewChip,
   writeWhatsNewSeenId,
 } from "@/lib/whatsNew"
+import { OnboardingModal } from "@/components/OnboardingModal"
+import { parseConfigTextAsync } from "@/lib/pegboardConfig"
 import { FLAGS } from "@/lib/flags"
 
 type LinkEditorScope =
@@ -40,6 +42,10 @@ export function App() {
   const [linkEditorScope, setLinkEditorScope] = useState<LinkEditorScope>(null)
   const [whatsNewOpen, setWhatsNewOpen] = useState(false)
   const [showWhatsNewChip, setShowWhatsNewChip] = useState(false)
+  const [onboardingOpen, setOnboardingOpen] = useState(false)
+  const [emptyImportError, setEmptyImportError] = useState<string | null>(null)
+
+  const { setTheme, toggleLightDark } = useTheme()
 
   useEffect(() => {
     if (!loaded) return
@@ -73,7 +79,6 @@ export function App() {
     [markWhatsNewSeen]
   )
 
-  const { toggleLightDark } = useTheme()
   const searchShortcut = state.settings.searchShortcut
   const settingsShortcut = state.settings.settingsShortcut
   const themeShortcut = state.settings.themeShortcut
@@ -95,6 +100,8 @@ export function App() {
     if (whatsNewOpen) {
       setWhatsNewOpen(false)
       markWhatsNewSeen()
+    } else if (onboardingOpen) {
+      setOnboardingOpen(false)
     } else if (settingsOpen) {
       setSettingsOpen(false)
     } else if (commandOpen) {
@@ -108,6 +115,7 @@ export function App() {
     }
   }, [
     whatsNewOpen,
+    onboardingOpen,
     markWhatsNewSeen,
     settingsOpen,
     commandOpen,
@@ -244,6 +252,31 @@ export function App() {
     [save, linkEditorScope]
   )
 
+  const handleEmptyImport = useCallback(
+    async (file: File) => {
+      setEmptyImportError(null)
+      const confirmed = window.confirm(
+        "Import replaces all sections, ungrouped links, layout mode, and settings with the file contents. Continue?"
+      )
+      if (!confirmed) return
+      try {
+        const text = await file.text()
+        const result = await parseConfigTextAsync(text)
+        if (!result.ok) {
+          setEmptyImportError(result.error)
+          return
+        }
+        save({ ...result.appState, editMode: false })
+        if (result.theme) {
+          setTheme(result.theme)
+        }
+      } catch {
+        setEmptyImportError("Could not read the file.")
+      }
+    },
+    [save, setTheme]
+  )
+
   if (!loaded) {
     return (
       <div className="flex min-h-svh w-full items-center justify-center">
@@ -258,9 +291,18 @@ export function App() {
   return (
     <>
       {isEmpty ? (
-        <EmptyState
-          onEditClick={() => save((prev) => ({ ...prev, editMode: true }))}
-        />
+        <>
+          {state.layoutMode === "canvas" ? (
+            <DotBackground className="fixed inset-0 bg-background" />
+          ) : null}
+          <EmptyState
+            onCreateSection={openAddSection}
+            onAddShortcut={openAddStandaloneLink}
+            onImportBackup={handleEmptyImport}
+            importError={emptyImportError}
+            onOpenTour={() => setOnboardingOpen(true)}
+          />
+        </>
       ) : (
         <div key={state.layoutMode} className="layout-transition fixed inset-0">
           {state.layoutMode === "canvas" ? (
@@ -316,9 +358,15 @@ export function App() {
         searchOpen={commandOpen}
         onSearchClick={() => setCommandOpen(true)}
         onSettingsClick={() => setSettingsOpen(true)}
-        showWhatsNew={showWhatsNewChip}
+        hideSearch={isEmpty}
+        showWhatsNew={showWhatsNewChip && !isEmpty}
         onWhatsNewClick={() => setWhatsNewOpen(true)}
         onDismissWhatsNew={markWhatsNewSeen}
+      />
+      <OnboardingModal
+        open={onboardingOpen}
+        onOpenChange={setOnboardingOpen}
+        searchShortcut={searchShortcut}
       />
       <WhatsNewModal
         open={whatsNewOpen}

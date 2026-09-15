@@ -44,7 +44,7 @@ Root component. Responsibilities:
 
 - Uses `useStorage` for state and persistence
 - Shows loading until `loaded`
-- Renders `EmptyState` when no sections, else `Canvas` or `ListView` based on `layoutMode`
+- Renders `EmptyState` when no sections and no standalone links; otherwise `Canvas`, `ListView`, or `FolderView` from `layoutMode`. While empty, toolbar hides search; empty landing offers create section, add shortcut, YAML import, and optional [`OnboardingModal`](./src/components/OnboardingModal.tsx).
 - **Shortcuts:** `useHotkey` for `state.settings.searchShortcut` (toggle command palette), `state.settings.settingsShortcut` (open settings), and `state.settings.themeShortcut` (toggle light/dark; empty string disables)
 - Manages dialogs: `SettingsModal`, `SectionEditor`, `LinkEditor`, `WhatsNewModal` (changelog from bundled Markdown)
 - Handles `handleEscape` (close settings, command palette, section/link editors, or exit edit mode)
@@ -229,7 +229,11 @@ Color input: native picker, hex input, swatches from `COLOR_SWATCHES`.
 
 #### `src/components/EmptyState.tsx`
 
-First-run view when no sections; prompts user to click Edit.
+First-run when `sections` and `standaloneLinks` are both empty: three square action cards (create section, add shortcut, import backup), context-menu pin hint, and link to open onboarding tour.
+
+#### `src/components/OnboardingModal.tsx`
+
+Opt-in stepper from empty state: layouts, command palette search, omnibox `pb`, and Chromium profile sync (Chrome vs Edge copy via [`getChromiumBrowserName`](./src/lib/utils.ts)).
 
 #### `src/components/theme-provider.tsx`
 
@@ -241,7 +245,7 @@ Theme context (dark/light/system), localStorage persistence, system preference l
 
 | File                            | Exports                                                                          | Purpose                                                   |
 | ------------------------------- | -------------------------------------------------------------------------------- | --------------------------------------------------------- |
-| `src/lib/utils.ts`              | `cn(...)`                                                                        | `clsx` + `tailwind-merge` for class names                 |
+| `src/lib/utils.ts`              | `cn(...)`                                                                        | `clsx` + `tailwind-merge`; `getChromiumBrowserName()` for onboarding copy |
 | `src/lib/canvasScrollAnchor.ts` | `readCanvasScrollAnchor`, `writeCanvasScrollAnchor`, `applyScrollToCenter`, etc. | Canvas scroll anchor in `storage.local` / optional `sync` |
 | `src/lib/normalizeAppState.ts`  | `normalizeAppState`, `applyStoredStateBackfill`, `migrateSections`             | Shared normalization for sync load and config import      |
 | `src/lib/pegboardConfig.ts`     | `serializeConfigYaml`, `parseConfigTextAsync`, `CONFIG_VERSION`                  | Versioned YAML export/import (`pegboard.yml`)             |
@@ -328,6 +332,7 @@ src/
 │   │   ├── LinkEditor.tsx
 │   │   └── ColorPickerField.tsx
 │   ├── EmptyState.tsx
+│   ├── OnboardingModal.tsx
 │   ├── theme-provider.tsx
 │   └── ui/                 # shadcn
 └── lib/
