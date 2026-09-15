@@ -44,6 +44,8 @@ export type SectionLabelSize =
 export type Settings = {
   searchShortcut: string
   settingsShortcut: string
+  /** Toggle light/dark. Empty string disables the shortcut. */
+  themeShortcut: string
   sectionLabelSize: SectionLabelSize
   /** Persist canvas viewport center across new tabs (local; optional sync via canvasScrollSync). */
   canvasRememberScroll: boolean

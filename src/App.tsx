@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react"
+import { useState, useCallback, useEffect } from "react"
 import { Canvas } from "@/components/canvas/Canvas"
 import { ListView } from "@/components/list/ListView"
 import { FolderView } from "@/components/folder/FolderView"
@@ -11,9 +11,18 @@ import { SettingsModal } from "@/components/settings/SettingsModal"
 import { useStorage } from "@/hooks/useStorage"
 import { useHotkey, type RegisterableHotkey } from "@tanstack/react-hotkeys"
 import { useEscape } from "@/hooks/useEscape"
+import { useTheme } from "@/components/theme-provider"
 import type { Section, Link } from "@/types"
 import { DotBackground } from "./components/canvas/DotGridBackground"
 import { standaloneSpawnPosition } from "@/lib/standaloneSpawnPosition"
+import { WhatsNewModal } from "@/components/WhatsNewModal"
+import { WHATS_NEW_CONTENT } from "@/lib/whatsNewContent"
+import {
+  readWhatsNewSeenId,
+  shouldShowWhatsNewChip,
+  writeWhatsNewSeenId,
+} from "@/lib/whatsNew"
+import { FLAGS } from "@/lib/flags"
 
 type LinkEditorScope =
   | { kind: "section"; sectionId: string }
@@ -29,9 +38,45 @@ export function App() {
   const [linkEditorOpen, setLinkEditorOpen] = useState(false)
   const [linkToEdit, setLinkToEdit] = useState<Link | null>(null)
   const [linkEditorScope, setLinkEditorScope] = useState<LinkEditorScope>(null)
+  const [whatsNewOpen, setWhatsNewOpen] = useState(false)
+  const [showWhatsNewChip, setShowWhatsNewChip] = useState(false)
 
+  useEffect(() => {
+    if (!loaded) return
+    if (FLAGS.alwaysShowWhatsNew) {
+      setShowWhatsNewChip(true)
+      return
+    }
+    let cancelled = false
+    void readWhatsNewSeenId().then((seenId) => {
+      if (cancelled) return
+      setShowWhatsNewChip(
+        shouldShowWhatsNewChip(seenId, WHATS_NEW_CONTENT.id)
+      )
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [loaded])
+
+  const markWhatsNewSeen = useCallback(() => {
+    if (FLAGS.alwaysShowWhatsNew) return
+    setShowWhatsNewChip(false)
+    void writeWhatsNewSeenId(WHATS_NEW_CONTENT.id)
+  }, [])
+
+  const handleWhatsNewOpenChange = useCallback(
+    (open: boolean) => {
+      setWhatsNewOpen(open)
+      if (!open) markWhatsNewSeen()
+    },
+    [markWhatsNewSeen]
+  )
+
+  const { toggleLightDark } = useTheme()
   const searchShortcut = state.settings.searchShortcut
   const settingsShortcut = state.settings.settingsShortcut
+  const themeShortcut = state.settings.themeShortcut
   useHotkey(
     searchShortcut as RegisterableHotkey,
     useCallback(() => setCommandOpen((prev) => !prev), [])
@@ -40,9 +85,17 @@ export function App() {
     settingsShortcut as RegisterableHotkey,
     useCallback(() => setSettingsOpen(true), [])
   )
+  useHotkey(
+    (themeShortcut || "d") as RegisterableHotkey,
+    toggleLightDark,
+    { enabled: themeShortcut.length > 0 }
+  )
 
   const handleEscape = useCallback(() => {
-    if (settingsOpen) {
+    if (whatsNewOpen) {
+      setWhatsNewOpen(false)
+      markWhatsNewSeen()
+    } else if (settingsOpen) {
       setSettingsOpen(false)
     } else if (commandOpen) {
       setCommandOpen(false)
@@ -54,6 +107,8 @@ export function App() {
       save((prev) => ({ ...prev, editMode: false }))
     }
   }, [
+    whatsNewOpen,
+    markWhatsNewSeen,
     settingsOpen,
     commandOpen,
     sectionEditorOpen,
@@ -261,6 +316,14 @@ export function App() {
         searchOpen={commandOpen}
         onSearchClick={() => setCommandOpen(true)}
         onSettingsClick={() => setSettingsOpen(true)}
+        showWhatsNew={showWhatsNewChip}
+        onWhatsNewClick={() => setWhatsNewOpen(true)}
+        onDismissWhatsNew={markWhatsNewSeen}
+      />
+      <WhatsNewModal
+        open={whatsNewOpen}
+        onOpenChange={handleWhatsNewOpenChange}
+        content={WHATS_NEW_CONTENT}
       />
       <SettingsModal
         open={settingsOpen}

@@ -82,6 +82,19 @@ describe("configDocumentToAppState", () => {
     expect(state.layoutMode).toBe("folders")
     expect(state.settings.searchShortcut).toBe("Mod+/")
     expect(state.settings.settingsShortcut).toBeTruthy()
+    expect(state.settings.themeShortcut).toBe("d")
+  })
+
+  it("keeps an empty themeShortcut so the toggle can be disabled", () => {
+    const doc = migrateConfigDocument({
+      version: 1,
+      layout: "canvas",
+      settings: { themeShortcut: "" },
+      sections: [],
+      ungrouped: [],
+    })
+    const state = configDocumentToAppState(doc)
+    expect(state.settings.themeShortcut).toBe("")
   })
 })
 
@@ -118,5 +131,6 @@ ungrouped: []
 `)
     const doc = migrateConfigDocument(raw)
     expect(doc.settings.searchShortcut).toBe("Mod+K")
+    expect(doc.settings.themeShortcut).toBe("d")
   })
 })

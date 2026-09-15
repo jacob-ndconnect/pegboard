@@ -36,6 +36,7 @@ export type SettingConfig =
       description?: string
       type: "hotkey" | "select" | "boolean"
       options?: readonly { value: string; label: string }[]
+      allowEmpty?: boolean
     }
   | {
       id: "omniboxKeyword"
@@ -67,7 +68,10 @@ export type SettingsSection = {
   label: string
   icon?: ElementType
   settings?: SettingConfig[]
-  Content?: ComponentType<{ state: AppState; onReplaceState: (state: AppState) => void }>
+  Content?: ComponentType<{
+    state: AppState
+    onReplaceState: (state: AppState) => void
+  }>
 }
 
 // Support section config — update with your details
@@ -90,14 +94,23 @@ export const SETTINGS_SECTIONS: SettingsSection[] = [
       {
         id: "searchShortcut",
         label: "Search shortcut",
-        description: "Keyboard shortcut to open search",
+        // description: "Keyboard shortcut to open search",
         type: "hotkey",
       },
       {
         id: "settingsShortcut",
         label: "Settings shortcut",
-        description: "Keyboard shortcut to open settings",
+        description: "Clear to turn the shortcut off.",
         type: "hotkey",
+        allowEmpty: true,
+      },
+      {
+        id: "themeShortcut",
+        label: "Light/dark shortcut",
+        description:
+          "Toggle light and dark on the new tab page. Clear to turn the shortcut off.",
+        type: "hotkey",
+        allowEmpty: true,
       },
       {
         id: "omniboxKeyword",
@@ -117,8 +130,7 @@ export const SETTINGS_SECTIONS: SettingsSection[] = [
       {
         id: "theme",
         label: "Theme",
-        description:
-          "Light, dark, or match the system. D on the new tab page also toggles light/dark.",
+        description: "Light, dark, or match the system.",
         type: "theme",
       },
       {
@@ -128,6 +140,20 @@ export const SETTINGS_SECTIONS: SettingsSection[] = [
         type: "select",
         options: SECTION_LABEL_SIZE_OPTIONS,
       },
+      {
+        id: "canvasRememberScroll",
+        label: "Remember canvas position",
+        description:
+          "Save where the canvas is positioned. New tabs restore that view.",
+        type: "boolean",
+      },
+      {
+        id: "canvasRestoreScrollOnResize",
+        label: "Keep position on resize",
+        description:
+          "When the window is resized, keep the same canvas position, even if the window is larger than the items.",
+        type: "boolean",
+      },
     ],
   },
   {
@@ -136,24 +162,10 @@ export const SETTINGS_SECTIONS: SettingsSection[] = [
     icon: CloudArrowUpIcon,
     settings: [
       {
-        id: "canvasRememberScroll",
-        label: "Remember canvas scroll",
-        description:
-          "Save where the canvas is scrolled (viewport center). New tabs restore that view.",
-        type: "boolean",
-      },
-      {
         id: "canvasScrollSync",
         label: "Sync canvas scroll",
         description:
-          "Also store scroll position in Chrome sync (across signed-in devices). Uses little space.",
-        type: "boolean",
-      },
-      {
-        id: "canvasRestoreScrollOnResize",
-        label: "Keep center on resize",
-        description:
-          "When the window is resized, keep the same canvas point at the viewport center, even if the window is larger than the items.",
+          "Sync your last canvas position across signed in devices (uses chrome sync).",
         type: "boolean",
       },
     ],

@@ -3,6 +3,7 @@ import type { AppState, Settings } from "@/types"
 export const DEFAULT_SETTINGS: Settings = {
   searchShortcut: "Mod+K",
   settingsShortcut: "Mod+,",
+  themeShortcut: "d",
   sectionLabelSize: "text-lg",
   canvasRememberScroll: true,
   canvasScrollSync: false,

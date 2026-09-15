@@ -192,7 +192,7 @@ const Switch = forwardRef<HTMLDivElement, SwitchProps>(
           disabled={disabled}
           tabIndex={0}
           className={cn(
-            "relative shrink-0 cursor-pointer rounded-none outline-none",
+            "relative shrink-0 cursor-pointer rounded-full outline-none",
             "transition-colors duration-80",
             "focus-visible:ring-1 focus-visible:ring-[#8FD0EC] focus-visible:ring-offset-2 focus-visible:ring-offset-background"
           )}
@@ -211,7 +211,7 @@ const Switch = forwardRef<HTMLDivElement, SwitchProps>(
         >
           <SwitchPrimitive.Thumb asChild>
             <motion.span
-              className="absolute top-0 left-0 block rounded-none bg-white shadow-sm"
+              className="absolute top-0 left-0 block rounded-full bg-white shadow-sm"
               initial={false}
               style={{ x: motionX }}
               animate={{

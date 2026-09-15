@@ -11,7 +11,7 @@ A Chrome extension that replaces the default new tab page with a customizable co
 - **@dnd-kit** for drag-and-drop
 - **@tanstack/react-hotkeys** for shortcuts (Mod+K style)
 - **Chrome Extension** (Manifest V3) — `chrome_url_overrides.newtab`
-- **chrome.storage.sync** for `AppState`; **chrome.storage.local** for canvas scroll anchor (optional mirror to sync)
+- **chrome.storage.sync** for `AppState`; **chrome.storage.local** for canvas scroll anchor (optional mirror to sync) and what's-new ack (`whatsNewSeenId`, integer matching [`src/content/whats-new.md`](./src/content/whats-new.md) frontmatter `id` — not manifest version)
 - **Service worker** (`background.ts` → `background.js`) for omnibox
 
 ---
@@ -25,7 +25,7 @@ A Chrome extension that replaces the default new tab page with a customizable co
 | `Link`             | `id`, `url`, `label`, optional `searchTerms` (palette search only), optional `badge`, optional `invertIcon` (favicon CSS invert in dark mode), optional `customIcon` (unused in UI yet)                                                                                                                                         |
 | `Section`          | `id`, `name`, `accentColor`, `links[]`, `position` (`x`, `y` for Canvas), optional `canvasColumnSpan` (link **tiles per row** on canvas; default = link count; width math in `canvasGrid.ts` — tile stride matches `LinkCard` + `SectionLinkDraggable` spacing) |
 | `SectionLabelSize` | Tailwind text classes (`text-xs` … `text-3xl`) for canvas section title typography                                                                                                                                                                              |
-| `Settings`         | `searchShortcut`, `settingsShortcut`, `sectionLabelSize`, `canvasRememberScroll`, `canvasScrollSync`, `canvasRestoreScrollOnResize`                                                                                                                             |
+| `Settings`         | `searchShortcut`, `settingsShortcut`, `themeShortcut` (empty disables), `sectionLabelSize`, `canvasRememberScroll`, `canvasScrollSync`, `canvasRestoreScrollOnResize`                                                                                                                             |
 | `AppState`         | `sections[]`, `layoutMode` ("canvas" \| "list"), `editMode`, `settings`                                                                                                                                                                                         |
 | `BadgeStyle`       | `emoji`, `color` (hex)                                                                                                                                                                                                                                          |
 
@@ -45,8 +45,8 @@ Root component. Responsibilities:
 - Uses `useStorage` for state and persistence
 - Shows loading until `loaded`
 - Renders `EmptyState` when no sections, else `Canvas` or `ListView` based on `layoutMode`
-- **Shortcuts:** `useHotkey` for `state.settings.searchShortcut` (toggle command palette) and `state.settings.settingsShortcut` (open settings)
-- Manages dialogs: `SettingsModal`, `SectionEditor`, `LinkEditor`
+- **Shortcuts:** `useHotkey` for `state.settings.searchShortcut` (toggle command palette), `state.settings.settingsShortcut` (open settings), and `state.settings.themeShortcut` (toggle light/dark; empty string disables)
+- Manages dialogs: `SettingsModal`, `SectionEditor`, `LinkEditor`, `WhatsNewModal` (changelog from bundled Markdown)
 - Handles `handleEscape` (close settings, command palette, section/link editors, or exit edit mode)
 - Passes `save` as updater: `save((prev) => ({ ...prev, ... }))` to avoid stale closures
 
@@ -93,7 +93,7 @@ Root component. Responsibilities:
 **Purpose:** Platform-aware shortcuts (Mod = ⌘ on Mac, Ctrl on Windows).
 
 - **Provider:** `HotkeysProvider` wraps `App` in `main.tsx`
-- **App:** `useHotkey(searchShortcut, …)`, `useHotkey(settingsShortcut, …)` — values come from `state.settings`, not hardcoded strings
+- **App:** `useHotkey(searchShortcut, …)`, `useHotkey(settingsShortcut, …)`, `useHotkey(themeShortcut, …)` — values come from `state.settings`, not hardcoded strings
 - **Display:** `formatForDisplay(state.settings.searchShortcut)` in `EditModeToolbar` for the search field key hints
 
 ### `src/hooks/useEscape.ts`
@@ -187,7 +187,7 @@ Dialog with vertical **Tabs**: Keyboard, Appearance, Sync, Data, Support.
 
 #### `settingsConfig.ts`
 
-- Defines tab sections: shortcuts + omnibox info (**Keyboard**), **Theme** (localStorage via `ThemeProvider`, not `AppState.settings`) + **Section label size** (**Appearance**), canvas scroll persistence (**Sync**), YAML export/import (**Data**), and **Support** content
+- Defines tab sections: shortcuts + omnibox info (**Keyboard**, including light/dark toggle shortcut), **Theme** (localStorage via `ThemeProvider`, not `AppState.settings`) + **Section label size** (**Appearance**), canvas scroll persistence (**Sync**), YAML export/import (**Data**), and **Support** content
 - **Support:** `SupportSection` + `SUPPORT_CONFIG` (links, avatar asset, etc.)
 
 ---
@@ -196,7 +196,7 @@ Dialog with vertical **Tabs**: Keyboard, Appearance, Sync, Data, Support.
 
 #### `src/components/editor/EditModeToolbar.tsx`
 
-Fixed toolbar (top: edit toggle, search affordance with shortcut chips, settings gear, layout toggle; bottom in edit mode: add section, reset canvas positions when applicable).
+Fixed toolbar (top: edit toggle, search affordance with shortcut chips, optional **See what's new** chip, settings gear, layout toggle; bottom in edit mode: add section, reset canvas positions when applicable).
 
 - **Edit** — toggles `editMode` (uses `save({ ...state, … })` for this path)
 - **Canvas / List** — switches `layoutMode`
@@ -233,7 +233,7 @@ First-run view when no sections; prompts user to click Edit.
 
 #### `src/components/theme-provider.tsx`
 
-Theme context (dark/light/system), localStorage persistence, system preference listener.
+Theme context (dark/light/system), localStorage persistence, system preference listener. Light/dark keyboard toggle lives in `App` via `settings.themeShortcut`.
 
 ---
 
@@ -249,13 +249,17 @@ Theme context (dark/light/system), localStorage persistence, system preference l
 | `src/lib/url.ts`                | `getDomain(url)`                                                                 | Hostname without `www.`                                   |
 | `src/lib/color-swatches.ts`     | `COLOR_SWATCHES`                                                                 | Preset hex colors for pickers                             |
 | `src/lib/color.ts`              | `getContrastColor`                                                               | Text color on colored section headers                     |
+| `src/lib/whatsNew.ts`           | `parseWhatsNewMarkdown`, `readWhatsNewSeenId`, `writeWhatsNewSeenId`, …          | Changelog frontmatter parse; local ack for what's-new chip |
+| `src/lib/whatsNewContent.ts`    | `WHATS_NEW_CONTENT`                                                              | Parsed [`src/content/whats-new.md`](./src/content/whats-new.md) at build time |
+| `src/lib/flags.ts`              | `FLAGS`                                                                          | Dev toggles (e.g. `alwaysShowWhatsNew`)                     |
 
 ---
 
 ## UI Components (shadcn)
 
 - `src/components/ui/button.tsx`
-- `src/components/ui/dialog.tsx`
+- `src/components/ui/dialog.tsx` — `DialogContent` is capped to `min(90dvh, 100dvh - 2rem)` so dialogs cannot overflow the window; `DialogFooter` is `sticky` at the bottom of the scroll body with a fade from `--popover` to transparent
+- `src/components/ui/scroll-area.tsx`
 - `src/components/ui/input.tsx`
 - `src/components/ui/command.tsx` (cmdk)
 - `src/components/ui/popover.tsx`

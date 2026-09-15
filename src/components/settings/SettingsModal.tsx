@@ -6,6 +6,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { ScrollArea } from "@/components/ui/scroll-area"
 import {
   Tabs,
   TabsContent,
@@ -76,6 +77,7 @@ function renderSetting(
         description={config.description}
         value={settings[config.id] as string}
         onChange={(value) => onChange(config.id, value)}
+        allowEmpty={config.allowEmpty}
       />
     )
   }
@@ -149,10 +151,10 @@ export function SettingsModal({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className="flex max-h-[90vh] min-h-[min(600px,90vh)] max-w-[560px] flex-col gap-0 p-0 sm:max-w-[720px]"
+        className="flex min-h-[min(600px,90dvh)] max-w-[560px] flex-col gap-0 p-0 sm:max-w-[720px]"
         showCloseButton={true}
       >
-        <DialogHeader className="flex flex-row items-center justify-between gap-4 border-b px-4 py-4 pr-12">
+        <DialogHeader className="flex shrink-0 flex-row items-center justify-between gap-4 border-b px-4 py-4 pr-12">
           <DialogTitle className="flex items-center gap-2">
             <GearIcon className="size-4" weight="regular" />
             Settings
@@ -184,26 +186,28 @@ export function SettingsModal({
                 </TabsTrigger>
               ))}
             </TabsList>
-            <div className="min-h-0 flex-1 overflow-y-auto p-4">
-              {SETTINGS_SECTIONS.map((section) => (
-                <TabsContent
-                  key={section.id}
-                  value={section.id}
-                  className="mt-0 flex flex-col gap-6"
-                >
-                  {section.Content ? (
-                    <section.Content
-                      state={state}
-                      onReplaceState={onReplaceState}
-                    />
-                  ) : (
-                    section.settings?.map((config) =>
-                      renderSetting(config, settings, handleSettingChange)
-                    )
-                  )}
-                </TabsContent>
-              ))}
-            </div>
+            <ScrollArea className="min-h-0 max-h-[min(70dvh,calc(90dvh-8rem))] flex-1">
+              <div className="p-4">
+                {SETTINGS_SECTIONS.map((section) => (
+                  <TabsContent
+                    key={section.id}
+                    value={section.id}
+                    className="mt-0 flex flex-col gap-6"
+                  >
+                    {section.Content ? (
+                      <section.Content
+                        state={state}
+                        onReplaceState={onReplaceState}
+                      />
+                    ) : (
+                      section.settings?.map((config) =>
+                        renderSetting(config, settings, handleSettingChange)
+                      )
+                    )}
+                  </TabsContent>
+                ))}
+              </div>
+            </ScrollArea>
           </div>
         </Tabs>
       </DialogContent>

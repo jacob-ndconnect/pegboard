@@ -6,12 +6,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { ScrollArea } from "@/components/ui/scroll-area"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { ColorPickerPopover } from "@/components/ui/color-picker"
 import { COLOR_SWATCHES } from "@/lib/color-swatches"
 import type { Section } from "@/types"
-import { TrashIcon } from "@phosphor-icons/react/dist/ssr"
+import { FloppyDiskIcon, TrashIcon } from "@phosphor-icons/react/dist/ssr"
 
 type SectionEditorProps = {
   open: boolean
@@ -66,66 +67,60 @@ export function SectionEditor({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent showCloseButton>
-        <DialogHeader>
+      <DialogContent showCloseButton className="p-0">
+        <DialogHeader className="px-6 pt-6">
           <DialogTitle>{section ? "Edit Section" : "Add Section"}</DialogTitle>
         </DialogHeader>
-        <div className="flex flex-col gap-4 py-2">
-          <div className="flex flex-col gap-2">
-            <label
-              htmlFor="section-name"
-              className="text-xs font-medium text-muted-foreground"
-            >
-              Section name
-            </label>
-            <Input
-              id="section-name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. Work, Personal"
-              onKeyDown={(e) => e.key === "Enter" && handleSave()}
-            />
+        <ScrollArea className="max-h-[min(70dvh,calc(90dvh-10rem))]">
+          <div className="flex flex-col gap-4 px-6 py-2">
+            <div className="flex flex-col gap-2">
+              <label
+                htmlFor="section-name"
+                className="text-xs font-medium text-muted-foreground"
+              >
+                Section name
+              </label>
+              <Input
+                id="section-name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="e.g. Work, Personal"
+                onKeyDown={(e) => e.key === "Enter" && handleSave()}
+              />
+            </div>
+            <div className="flex flex-col gap-2">
+              <label className="text-xs font-medium text-muted-foreground">
+                Accent color
+              </label>
+              <ColorPickerPopover
+                value={accentColor}
+                onValueChange={(_, parsed) => setAccentColor(parsed.hex)}
+                swatches={[...COLOR_SWATCHES]}
+                hideEyedropper
+              />
+            </div>
           </div>
-          <div className="flex flex-col gap-2">
-            <label className="text-xs font-medium text-muted-foreground">
-              Accent color
-            </label>
-            <ColorPickerPopover
-              value={accentColor}
-              onValueChange={(_, parsed) => setAccentColor(parsed.hex)}
-              swatches={[...COLOR_SWATCHES]}
-              hideEyedropper
-            />
-          </div>
-        </div>
-        <DialogFooter className="sm:flex-row sm:justify-end">
-          {isEditing && onDelete && (
+          <DialogFooter>
+            {isEditing && onDelete && (
+              <Button
+                variant="destructive"
+                size="lg"
+                className="mr-auto cursor-pointer rounded-full"
+                onClick={handleDelete}
+              >
+                Delete <TrashIcon />
+              </Button>
+            )}
             <Button
-              variant="destructive"
               size="lg"
-              className="mr-auto cursor-pointer rounded-full"
-              onClick={handleDelete}
+              className="cursor-pointer rounded-full"
+              onClick={handleSave}
+              disabled={!name.trim()}
             >
-              Delete <TrashIcon />
+              <FloppyDiskIcon /> Save
             </Button>
-          )}
-          <Button
-            size="lg"
-            className="cursor-pointer rounded-full"
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-          >
-            Cancel
-          </Button>
-          <Button
-            size="lg"
-            className="cursor-pointer rounded-full"
-            onClick={handleSave}
-            disabled={!name.trim()}
-          >
-            Save
-          </Button>
-        </DialogFooter>
+          </DialogFooter>
+        </ScrollArea>
       </DialogContent>
     </Dialog>
   )

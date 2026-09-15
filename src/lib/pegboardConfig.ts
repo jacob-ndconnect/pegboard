@@ -115,7 +115,9 @@ function coerceSettings(raw: unknown): Settings {
     if (key === "sectionLabelSize" && typeof value === "string") {
       merged.sectionLabelSize = value as SectionLabelSize
     } else if (
-      (key === "searchShortcut" || key === "settingsShortcut") &&
+      (key === "searchShortcut" ||
+        key === "settingsShortcut" ||
+        key === "themeShortcut") &&
       typeof value === "string"
     ) {
       merged[key] = value

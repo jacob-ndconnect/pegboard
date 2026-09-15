@@ -18,6 +18,7 @@ import {
   LinkSimpleIcon,
   MagnifyingGlassIcon,
   SelectionPlusIcon,
+  XIcon,
 } from "@phosphor-icons/react/dist/ssr"
 import { formatForDisplay } from "@tanstack/react-hotkeys"
 import { Kbd } from "../ui/kbd"
@@ -57,6 +58,9 @@ type EditModeToolbarProps = {
   searchOpen: boolean
   onSearchClick: () => void
   onSettingsClick: () => void
+  showWhatsNew?: boolean
+  onWhatsNewClick?: () => void
+  onDismissWhatsNew?: () => void
 }
 
 export function EditModeToolbar({
@@ -67,6 +71,9 @@ export function EditModeToolbar({
   searchOpen,
   onSearchClick,
   onSettingsClick,
+  showWhatsNew = false,
+  onWhatsNewClick,
+  onDismissWhatsNew,
 }: EditModeToolbarProps) {
   const { editMode, layoutMode } = state
 
@@ -120,30 +127,57 @@ export function EditModeToolbar({
           </Tabs>
         </div>
 
-        <InputGroup
-          className={cn(
-            "f-full w-full max-w-sm cursor-pointer rounded-none",
-            searchOpen && "opacity-2"
-          )}
-          onClick={onSearchClick}
-        >
-          <InputGroupInput placeholder="Search" />
-          <InputGroupAddon>
-            <MagnifyingGlassIcon className="size-4" />
-          </InputGroupAddon>
-          <InputGroupAddon align="inline-end">
-            {formatForDisplay(state.settings.searchShortcut)
-              .split("+")
-              .map((part) => (
-                <Kbd
-                  key={part}
-                  className="rounded-lg bg-muted text-muted-foreground"
-                >
-                  {part}
-                </Kbd>
-              ))}
-          </InputGroupAddon>
-        </InputGroup>
+        <div className="relative w-full max-w-sm">
+          <InputGroup
+            className={cn(
+              "f-full w-full cursor-pointer rounded-none",
+              searchOpen && "opacity-2"
+            )}
+            onClick={onSearchClick}
+          >
+            <InputGroupInput placeholder="Search" />
+            <InputGroupAddon>
+              <MagnifyingGlassIcon className="size-4" />
+            </InputGroupAddon>
+            <InputGroupAddon align="inline-end">
+              {formatForDisplay(state.settings.searchShortcut)
+                .split("+")
+                .map((part) => (
+                  <Kbd
+                    key={part}
+                    className="rounded-lg bg-muted text-muted-foreground"
+                  >
+                    {part}
+                  </Kbd>
+                ))}
+            </InputGroupAddon>
+          </InputGroup>
+          {showWhatsNew && onWhatsNewClick && onDismissWhatsNew ? (
+            <div
+              role="status"
+              className="absolute top-full left-1/2 z-50 mt-1.5 flex w-max max-w-[13rem] -translate-x-1/2 items-center gap-1 border border-border bg-background/95 px-2 py-1 text-xs shadow-sm backdrop-blur"
+            >
+              <button
+                type="button"
+                onClick={onWhatsNewClick}
+                className="min-w-0 cursor-pointer truncate text-left text-foreground hover:underline"
+              >
+                See what&apos;s new
+              </button>
+              <button
+                type="button"
+                aria-label="Dismiss what's new"
+                className="cursor-pointer shrink-0 rounded-none p-0.5 text-muted-foreground hover:text-foreground"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onDismissWhatsNew()
+                }}
+              >
+                <XIcon className="size-3.5" />
+              </button>
+            </div>
+          ) : null}
+        </div>
 
         <div className="flex justify-end">
           <div className="flex items-center gap-1">

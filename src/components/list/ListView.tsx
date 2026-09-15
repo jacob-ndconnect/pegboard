@@ -8,6 +8,7 @@ import {
 } from "@dnd-kit/core"
 import type { DragEndEvent, DragStartEvent } from "@dnd-kit/core"
 import { LinkCard } from "@/components/canvas/LinkCard"
+import { ScrollArea } from "@/components/ui/scroll-area"
 import { applyLinkDragEnd } from "@/lib/applyLinkDragEnd"
 import type { AppState, Link } from "@/types"
 import { SectionRow } from "./SectionRow"
@@ -92,7 +93,7 @@ export function ListView({
           </div>
         ) : null}
       </DragOverlay>
-      <div className="h-svh overflow-y-auto">
+      <ScrollArea className="h-svh">
         <div className="mx-auto max-w-4xl px-6 py-8">
           {(standaloneLinks.length > 0 || editMode) && (
             <SectionRow
@@ -124,7 +125,7 @@ export function ListView({
             />
           ))}
         </div>
-      </div>
+      </ScrollArea>
     </DndContext>
   )
 }

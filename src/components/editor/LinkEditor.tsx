@@ -6,6 +6,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { ScrollArea } from "@/components/ui/scroll-area"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { ColorPickerField } from "./ColorPickerField"
@@ -82,11 +83,12 @@ export function LinkEditor({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent showCloseButton className="sm:max-w-md">
-        <DialogHeader>
+      <DialogContent showCloseButton className="p-0 sm:max-w-md">
+        <DialogHeader className="px-6 pt-6">
           <DialogTitle>{isEditing ? "Edit Link" : "Add Link"}</DialogTitle>
         </DialogHeader>
-        <div className="flex flex-col gap-4 py-2">
+        <ScrollArea className="max-h-[min(70dvh,calc(90dvh-10rem))]">
+            <div className="flex flex-col gap-4 px-6 py-2">
           <div className="flex flex-col gap-2">
             <label
               htmlFor="link-url"
@@ -171,28 +173,29 @@ export function LinkEditor({
             <div className="flex justify-center rounded-lg border border-border bg-muted/30 p-6">
               <LinkCard link={previewLink} editMode={false} />
             </div>
-          </div>
-        </div>
-        <DialogFooter>
-          {isEditing && onDelete && (
+            </div>
+            </div>
+          <DialogFooter>
+            {isEditing && onDelete && (
+              <Button
+                variant="destructive"
+                onClick={handleDelete}
+                className="text-md mr-auto cursor-pointer rounded-full"
+                size="lg"
+              >
+                Delete <TrashIcon />
+              </Button>
+            )}
             <Button
-              variant="destructive"
-              onClick={handleDelete}
-              className="text-md mr-auto cursor-pointer"
+              className="text-md cursor-pointer rounded-full"
               size="lg"
+              onClick={handleSave}
+              disabled={!url.trim() || !label.trim()}
             >
-              Delete <TrashIcon />
+              <FloppyDiskIcon /> Save
             </Button>
-          )}
-          <Button
-            className="text-md cursor-pointer"
-            size="lg"
-            onClick={handleSave}
-            disabled={!url.trim() || !label.trim()}
-          >
-            <FloppyDiskIcon /> Save
-          </Button>
-        </DialogFooter>
+          </DialogFooter>
+        </ScrollArea>
       </DialogContent>
     </Dialog>
   )
