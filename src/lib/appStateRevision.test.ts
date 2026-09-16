@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest"
 import type { AppState } from "@/types"
 import { DEFAULT_APP_STATE } from "@/lib/defaultAppState"
 import {
-  boardItemCount,
   isAuthoritativeSync,
   preferIncoming,
   stampAppState,
