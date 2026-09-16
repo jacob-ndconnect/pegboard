@@ -1,9 +1,16 @@
 /// <reference types="chrome"/>
 
 import type { AppState, Link, Section } from "@/types"
-import { APP_STATE_STORAGE_KEY } from "@/lib/appStateStorageKey"
+import {
+  APP_STATE_STORAGE_KEY,
+  LAST_KNOWN_APP_STATE_KEY,
+} from "@/lib/appStateStorageKey"
 import { DEFAULT_APP_STATE, DEFAULT_SETTINGS } from "@/lib/defaultAppState"
 import { appendStandalonePin } from "@/lib/appendStandalonePin"
+import {
+  preferIncoming,
+  stampAppState,
+} from "@/lib/appStateRevision"
 
 const MAX_SUGGESTIONS = 6
 const CONTEXT_MENU_PIN_ID = "pegboard-pin-to-standalone"
@@ -62,6 +69,12 @@ function coalesceAppState(raw: unknown): AppState {
     return { ...DEFAULT_APP_STATE }
   }
   const r = raw as Partial<AppState>
+  const updatedAt =
+    typeof r.updatedAt === "number" &&
+    Number.isFinite(r.updatedAt) &&
+    r.updatedAt > 0
+      ? r.updatedAt
+      : undefined
   return {
     sections: Array.isArray(r.sections) ? r.sections : [],
     standaloneLinks: Array.isArray(r.standaloneLinks) ? r.standaloneLinks : [],
@@ -73,6 +86,7 @@ function coalesceAppState(raw: unknown): AppState {
         : DEFAULT_APP_STATE.layoutMode,
     editMode: r.editMode === true,
     settings: { ...DEFAULT_SETTINGS, ...r.settings },
+    ...(updatedAt != null ? { updatedAt } : {}),
   }
 }
 
@@ -98,12 +112,20 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
       ? ""
       : (tab?.title?.trim() ?? "")
 
-  chrome.storage.sync.get(APP_STATE_STORAGE_KEY, (result) => {
+  chrome.storage.sync.get(APP_STATE_STORAGE_KEY, (syncResult) => {
     if (chrome.runtime.lastError) return
-    const prev = coalesceAppState(result[APP_STATE_STORAGE_KEY])
-    const outcome = appendStandalonePin(prev, url, label)
-    if (outcome === "invalid" || outcome === "duplicate") return
-    chrome.storage.sync.set({ [APP_STATE_STORAGE_KEY]: outcome.next })
+    chrome.storage.local.get(LAST_KNOWN_APP_STATE_KEY, (localResult) => {
+      const fromSync = coalesceAppState(syncResult[APP_STATE_STORAGE_KEY])
+      const fromLocal = coalesceAppState(localResult[LAST_KNOWN_APP_STATE_KEY])
+      const prev = preferIncoming(fromLocal, fromSync, "hydrating")
+        ? fromLocal
+        : fromSync
+      const outcome = appendStandalonePin(prev, url, label)
+      if (outcome === "invalid" || outcome === "duplicate") return
+      const next = stampAppState(outcome.next)
+      chrome.storage.sync.set({ [APP_STATE_STORAGE_KEY]: next })
+      chrome.storage.local.set({ [LAST_KNOWN_APP_STATE_KEY]: next })
+    })
   })
 })
 

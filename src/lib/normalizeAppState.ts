@@ -4,6 +4,7 @@ import {
   normalizeCanvasColumnSpan,
 } from "@/lib/canvasGrid"
 import { DEFAULT_SETTINGS } from "@/lib/defaultAppState"
+import { readUpdatedAt } from "@/lib/appStateRevision"
 
 export function normalizeLayoutMode(mode: unknown): AppState["layoutMode"] {
   if (mode === "canvas" || mode === "list" || mode === "folders") return mode
@@ -73,7 +74,8 @@ export function normalizeAppState(appState: AppState): AppState {
     appState.sections?.length > 0
       ? migrateSections(appState.sections)
       : (appState.sections ?? [])
-  return {
+  const updatedAt = readUpdatedAt(appState)
+  const next: AppState = {
     ...appState,
     sections,
     layoutMode: normalizeLayoutMode(appState.layoutMode),
@@ -81,9 +83,12 @@ export function normalizeAppState(appState: AppState): AppState {
     standaloneLinks: appState.standaloneLinks ?? [],
     editMode: appState.editMode === true,
   }
+  if (updatedAt > 0) next.updatedAt = updatedAt
+  else delete next.updatedAt
+  return next
 }
 
-/** Apply backfills that should be written back to chrome.storage.sync on load. */
+/** In-memory backfill; persist on the next user save, not on load. */
 export function applyStoredStateBackfill(appState: AppState): {
   state: AppState
   shouldPersist: boolean

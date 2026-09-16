@@ -19,7 +19,7 @@ Let users back up and restore their layout via a human-editable YAML config and 
 | ------ | ---- |
 | [`src/lib/pegboardConfig.ts`](../../src/lib/pegboardConfig.ts) | Parse/serialize (dynamic `import("yaml")` in async paths), `CONFIG_VERSION`, per-version file migrators, ID coercion |
 | [`src/lib/normalizeAppState.ts`](../../src/lib/normalizeAppState.ts) | Single normalizer for sync load, import, and `storage.onChanged` (layout, sections, settings defaults, standalone links) |
-| [`src/hooks/useStorage.ts`](../../src/hooks/useStorage.ts) | Persists backfill when stored blob is missing new keys or needs section position migration |
+| [`src/hooks/useStorage.ts`](../../src/hooks/useStorage.ts) | Load/save; `updatedAt` conflict pick; local `lastKnownAppState`; no write-on-load backfill |
 | [`src/components/settings/DataSection.tsx`](../../src/components/settings/DataSection.tsx) | Export/import UI |
 
 ### Versioning

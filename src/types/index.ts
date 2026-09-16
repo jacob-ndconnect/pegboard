@@ -64,4 +64,6 @@ export type AppState = {
   layoutMode: "canvas" | "list" | "folders"
   editMode: boolean
   settings: Settings
+  /** Last local save time (ms). Used to stop an empty/stale sync blob from replacing a real board. */
+  updatedAt?: number
 }

@@ -26,7 +26,7 @@ A Chrome extension that replaces the default new tab page with a customizable co
 | `Section`          | `id`, `name`, `accentColor`, `links[]`, `position` (`x`, `y` for Canvas), optional `canvasColumnSpan` (link **tiles per row** on canvas; default = link count; width math in `canvasGrid.ts` — tile stride matches `LinkCard` + `SectionLinkDraggable` spacing) |
 | `SectionLabelSize` | Tailwind text classes (`text-xs` … `text-3xl`) for canvas section title typography                                                                                                                                                                              |
 | `Settings`         | `searchShortcut`, `settingsShortcut`, `themeShortcut` (empty disables), `sectionLabelSize`, `canvasRememberScroll`, `canvasScrollSync`, `canvasRestoreScrollOnResize`                                                                                                                             |
-| `AppState`         | `sections[]`, `layoutMode` ("canvas" \| "list"), `editMode`, `settings`                                                                                                                                                                                         |
+| `AppState`         | `sections[]`, `layoutMode` ("canvas" \| "list" \| "folders"), `editMode`, `settings`, optional `updatedAt` (ms, last save — which sync snapshot wins) |
 | `BadgeStyle`       | `emoji`, `color` (hex)                                                                                                                                                                                                                                          |
 
 ---
@@ -66,10 +66,11 @@ Root component. Responsibilities:
 **Purpose:** Load and persist `AppState` via `chrome.storage.sync`.
 
 - **Returns:** `{ state, save, loaded }`
-- **Defaults:** `DEFAULT_SETTINGS` (shortcuts, section label size, canvas scroll + resize toggles) merged into stored `appState.settings` on load; missing keys are backfilled and re-persisted
-- **save:** Accepts `AppState` or `(prev: AppState) => AppState`; uses functional `setState` and `queueMicrotask` for storage write
-- **Migration:** Section positions / column span via [`normalizeAppState`](./src/lib/normalizeAppState.ts); settings defaults merged on load; backfill persisted when stored blob is incomplete
-- **Guard:** `hasUserSavedRef` prevents initial load from overwriting user saves if load callback runs late
+- **Defaults:** `DEFAULT_SETTINGS` (shortcuts, section label size, canvas scroll + resize toggles) merged into stored `appState.settings` on load; missing keys are backfilled in memory and written on the next user save
+- **save:** Accepts `AppState` or `(prev: AppState) => AppState`; stamps `updatedAt`; uses functional `setState` and `queueMicrotask` for storage write
+- **Sync conflicts:** [`preferIncoming`](./src/lib/appStateRevision.ts) last-write-wins by `updatedAt`. A blank board does not replace a legacy (unstamped) populated board. While Chrome sync is still catching up, the larger board wins. A device-local `lastKnownAppState` copy can restore sync if a stale empty blob arrives.
+- **Migration:** Section positions / column span via [`normalizeAppState`](./src/lib/normalizeAppState.ts); settings defaults merged on load
+- **Guard:** `hasUserSavedRef` prevents initial load from overwriting user saves if load callback runs late; saves during the hydrate window stay local until sync is authoritative
 
 ### `src/hooks/useCanvasScrollAnchor.ts`
 
@@ -248,6 +249,7 @@ Theme context (dark/light/system), localStorage persistence, system preference l
 | `src/lib/utils.ts`              | `cn(...)`                                                                        | `clsx` + `tailwind-merge`; `getChromiumBrowserName()` for onboarding copy |
 | `src/lib/canvasScrollAnchor.ts` | `readCanvasScrollAnchor`, `writeCanvasScrollAnchor`, `applyScrollToCenter`, etc. | Canvas scroll anchor in `storage.local` / optional `sync` |
 | `src/lib/normalizeAppState.ts`  | `normalizeAppState`, `applyStoredStateBackfill`, `migrateSections`             | Shared normalization for sync load and config import      |
+| `src/lib/appStateRevision.ts`   | `stampAppState`, `preferIncoming`, `boardItemCount`                            | Which `appState` snapshot should win across devices       |
 | `src/lib/pegboardConfig.ts`     | `serializeConfigYaml`, `parseConfigTextAsync`, `CONFIG_VERSION`                  | Versioned YAML export/import (`pegboard.yml`)             |
 | `src/lib/favicon.ts`            | `getFaviconUrl`, `getFaviconFallbackUrl`                                         | Favicon URLs for a link’s domain                          |
 | `src/lib/url.ts`                | `getDomain(url)`                                                                 | Hostname without `www.`                                   |
@@ -337,6 +339,7 @@ src/
 │   └── ui/                 # shadcn
 └── lib/
     ├── utils.ts
+    ├── appStateRevision.ts
     ├── canvasScrollAnchor.ts
     ├── normalizeAppState.ts
     ├── pegboardConfig.ts
