@@ -25,6 +25,15 @@ import {
 import { OnboardingModal } from "@/components/OnboardingModal"
 import { parseConfigTextAsync } from "@/lib/pegboardConfig"
 import { FLAGS } from "@/lib/flags"
+import { CroppedPageSetupDialog } from "@/components/cropped-page/CroppedPageSetupDialog"
+import {
+  CroppedPageCaptureOverlay,
+  type CroppedPageCaptureSession,
+} from "@/components/cropped-page/CroppedPageCaptureOverlay"
+import { CroppedPageExpandOverlay } from "@/components/cropped-page/CroppedPageExpandOverlay"
+import { CroppedPageMirror } from "@/components/cropped-page/CroppedPageMirror"
+import { croppedPageSpawnPosition } from "@/lib/croppedPage"
+import type { CroppedPage } from "@/types"
 
 type LinkEditorScope =
   | { kind: "section"; sectionId: string }
@@ -44,6 +53,14 @@ export function App() {
   const [showWhatsNewChip, setShowWhatsNewChip] = useState(false)
   const [onboardingOpen, setOnboardingOpen] = useState(false)
   const [emptyImportError, setEmptyImportError] = useState<string | null>(null)
+  const [croppedSetupOpen, setCroppedSetupOpen] = useState(false)
+  const [captureSession, setCaptureSession] =
+    useState<CroppedPageCaptureSession | null>(null)
+  const [expandedCroppedPageId, setExpandedCroppedPageId] = useState<
+    string | null
+  >(null)
+  const [expandOriginRect, setExpandOriginRect] = useState<DOMRect | null>(null)
+  const [editOriginRect, setEditOriginRect] = useState<DOMRect | null>(null)
 
   const { setTheme, toggleLightDark } = useTheme()
 
@@ -110,6 +127,13 @@ export function App() {
       setSectionEditorOpen(false)
     } else if (linkEditorOpen) {
       setLinkEditorOpen(false)
+    } else if (expandedCroppedPageId) {
+      setExpandedCroppedPageId(null)
+      setExpandOriginRect(null)
+    } else if (captureSession) {
+      setCaptureSession(null)
+    } else if (croppedSetupOpen) {
+      setCroppedSetupOpen(false)
     } else if (state.editMode) {
       save((prev) => ({ ...prev, editMode: false }))
     }
@@ -121,8 +145,10 @@ export function App() {
     commandOpen,
     sectionEditorOpen,
     linkEditorOpen,
+    expandedCroppedPageId,
+    captureSession,
+    croppedSetupOpen,
     state.editMode,
-    state,
     save,
   ])
 
@@ -252,6 +278,81 @@ export function App() {
     [save, linkEditorScope]
   )
 
+  const openCroppedPageSetup = useCallback(() => {
+    setCroppedSetupOpen(true)
+  }, [])
+
+  const openCroppedPageCapture = useCallback(
+    (pageId: string, originRect: DOMRect | null) => {
+      const page = state.croppedPages.find((p) => p.id === pageId)
+      if (!page) return
+      setExpandedCroppedPageId(null)
+      setExpandOriginRect(null)
+      setEditOriginRect(originRect)
+      setCaptureSession({
+        pageId: page.id,
+        url: page.url,
+        label: page.label,
+        accentColor: page.accentColor,
+        existing: page,
+      })
+    },
+    [state.croppedPages]
+  )
+
+  const handleCroppedPageContinue = useCallback(
+    (url: string, accentColor: string, label: string) => {
+      setCaptureSession({
+        pageId: null,
+        url,
+        label,
+        accentColor,
+      })
+    },
+    []
+  )
+
+  const handleCroppedPageSave = useCallback(
+    (page: CroppedPage) => {
+      save((prev) => {
+        const idx = prev.croppedPages.findIndex((p) => p.id === page.id)
+        const position =
+          idx >= 0
+            ? prev.croppedPages[idx].position
+            : croppedPageSpawnPosition(prev.croppedPages.length)
+        const nextPage = { ...page, position }
+        const croppedPages =
+          idx >= 0
+            ? prev.croppedPages.map((p, i) => (i === idx ? nextPage : p))
+            : [...prev.croppedPages, nextPage]
+        return { ...prev, croppedPages }
+      })
+      setCaptureSession(null)
+    },
+    [save]
+  )
+
+  const handleCroppedPageCaptureDelete = useCallback(() => {
+    if (!captureSession?.pageId) {
+      setCaptureSession(null)
+      return
+    }
+    const id = captureSession.pageId
+    save((prev) => ({
+      ...prev,
+      croppedPages: prev.croppedPages.filter((p) => p.id !== id),
+    }))
+    setCaptureSession(null)
+  }, [captureSession, save])
+
+  const handleExpandCroppedPage = useCallback(
+    (pageId: string, originRect: DOMRect) => {
+      setExpandOriginRect(originRect)
+      setExpandedCroppedPageId(pageId)
+    },
+    []
+  )
+
   const handleEmptyImport = useCallback(
     async (file: File) => {
       setEmptyImportError(null)
@@ -286,7 +387,13 @@ export function App() {
   }
 
   const isEmpty =
-    state.sections.length === 0 && state.standaloneLinks.length === 0
+    state.sections.length === 0 &&
+    state.standaloneLinks.length === 0 &&
+    (state.croppedPages?.length ?? 0) === 0
+
+  const expandedCroppedPage = expandedCroppedPageId
+    ? state.croppedPages.find((p) => p.id === expandedCroppedPageId)
+    : undefined
 
   return (
     <>
@@ -315,6 +422,8 @@ export function App() {
                 onEditLink={openEditLink}
                 onAddLink={openAddLink}
                 onEditStandaloneLink={openEditStandaloneLink}
+                onEditCroppedPage={openCroppedPageCapture}
+                onExpandCroppedPage={handleExpandCroppedPage}
               />
             </>
           ) : state.layoutMode === "list" ? (
@@ -355,6 +464,7 @@ export function App() {
         save={save}
         onAddSection={openAddSection}
         onAddStandaloneLink={openAddStandaloneLink}
+        onAddCroppedPage={openCroppedPageSetup}
         searchOpen={commandOpen}
         onSearchClick={() => setCommandOpen(true)}
         onSettingsClick={() => setSettingsOpen(true)}
@@ -396,6 +506,36 @@ export function App() {
         onSave={handleLinkSave}
         onDelete={linkToEdit ? handleLinkDelete : undefined}
       />
+      <CroppedPageSetupDialog
+        open={croppedSetupOpen}
+        onOpenChange={setCroppedSetupOpen}
+        onContinue={handleCroppedPageContinue}
+      />
+      {state.croppedPages.map((page) => (
+        <CroppedPageMirror key={page.id} page={page} />
+      ))}
+      {captureSession ? (
+        <CroppedPageCaptureOverlay
+          session={captureSession}
+          originRect={editOriginRect}
+          onSave={handleCroppedPageSave}
+          onDelete={
+            captureSession.pageId ? handleCroppedPageCaptureDelete : undefined
+          }
+          onCancel={() => setCaptureSession(null)}
+        />
+      ) : null}
+      {expandedCroppedPage ? (
+        <CroppedPageExpandOverlay
+          page={expandedCroppedPage}
+          originRect={expandOriginRect}
+          onClose={() => {
+            setExpandedCroppedPageId(null)
+            setExpandOriginRect(null)
+          }}
+          onEdit={(rect) => openCroppedPageCapture(expandedCroppedPage.id, rect)}
+        />
+      ) : null}
     </>
   )
 }

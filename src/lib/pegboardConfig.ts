@@ -7,9 +7,11 @@ import type {
   StandaloneLinkEntry,
 } from "@/types"
 import { normalizeAppState, isValidPosition } from "@/lib/normalizeAppState"
+import { coerceCroppedPage } from "@/lib/croppedPage"
+import type { CroppedPage } from "@/types"
 import { DEFAULT_SETTINGS } from "@/lib/defaultAppState"
 
-export const CONFIG_VERSION = 1
+export const CONFIG_VERSION = 2
 
 export type PegboardTheme = "dark" | "light" | "system"
 
@@ -20,6 +22,7 @@ export type PegboardConfigDocument = {
   settings: Settings
   sections: Section[]
   ungrouped: Array<Link & { position: { x: number; y: number } }>
+  croppedPages: CroppedPage[]
 }
 
 type UnknownRecord = Record<string, unknown>
@@ -143,8 +146,17 @@ function migrateConfigV0ToV1(doc: UnknownRecord): UnknownRecord {
   return doc
 }
 
+/** v1 → v2: add croppedPages array. */
+function migrateConfigV1ToV2(doc: UnknownRecord): UnknownRecord {
+  if (!Array.isArray(doc.croppedPages)) {
+    doc.croppedPages = []
+  }
+  return doc
+}
+
 const CONFIG_MIGRATORS: ((doc: UnknownRecord) => UnknownRecord)[] = [
   migrateConfigV0ToV1,
+  migrateConfigV1ToV2,
 ]
 
 export function migrateConfigDocument(raw: unknown): PegboardConfigDocument {
@@ -180,6 +192,13 @@ export function migrateConfigDocument(raw: unknown): PegboardConfigDocument {
     if (entry) standaloneLinks.push(entry)
   }
 
+  const croppedRaw = Array.isArray(doc.croppedPages) ? doc.croppedPages : []
+  const croppedPages: CroppedPage[] = []
+  for (const item of croppedRaw) {
+    const page = coerceCroppedPage(item)
+    if (page) croppedPages.push(page)
+  }
+
   return {
     version: CONFIG_VERSION,
     layout: coerceLayout(doc.layout),
@@ -190,6 +209,7 @@ export function migrateConfigDocument(raw: unknown): PegboardConfigDocument {
       ...e.link,
       position: e.position,
     })),
+    croppedPages,
   }
 }
 
@@ -204,6 +224,7 @@ export function configDocumentToAppState(doc: PegboardConfigDocument): AppState 
   return normalizeAppState({
     sections: doc.sections,
     standaloneLinks,
+    croppedPages: doc.croppedPages,
     layoutMode: doc.layout,
     editMode: false,
     settings: doc.settings,
@@ -224,6 +245,7 @@ export function appStateToConfigDocument(
       ...link,
       position,
     })),
+    croppedPages: state.croppedPages,
   }
 }
 

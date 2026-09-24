@@ -64,6 +64,10 @@ interface ColorPickerPopoverProps extends ColorPickerProps {
   triggerShowRemove?: boolean
   onTriggerRemove?: () => void
   triggerClassName?: string
+  /** Replaces the swatch and hex label inside the trigger button. */
+  trigger?: ReactNode
+  /** Portal panel z-index. Default sits above app dialogs; raise it inside higher overlays. */
+  panelZIndex?: number
 }
 
 interface ColorSwatchProps extends Omit<
@@ -1555,6 +1559,8 @@ const ColorPickerPopover = forwardRef<HTMLDivElement, ColorPickerPopoverProps>(
       triggerShowRemove = false,
       onTriggerRemove,
       triggerClassName,
+      trigger,
+      panelZIndex = 100,
       ...pickerProps
     },
     ref
@@ -1636,21 +1642,25 @@ const ColorPickerPopover = forwardRef<HTMLDivElement, ColorPickerPopoverProps>(
           )}
           style={{ fontVariationSettings: fontWeights.medium }}
         >
-          {triggerLabel && triggerLabelPosition === "left" && (
-            <span className="px-1 text-[13px] text-muted-foreground select-none">
-              {triggerLabel}
-            </span>
-          )}
-          <ColorTile color={swatchColor} size={20} />
-          {triggerShowValue && (
-            <span className="text-[13px] text-foreground tabular-nums">
-              {valueLabel}
-            </span>
-          )}
-          {triggerLabel && triggerLabelPosition === "right" && (
-            <span className="px-1 text-[13px] text-muted-foreground select-none">
-              {triggerLabel}
-            </span>
+          {trigger ?? (
+            <>
+              {triggerLabel && triggerLabelPosition === "left" && (
+                <span className="px-1 text-[13px] text-muted-foreground select-none">
+                  {triggerLabel}
+                </span>
+              )}
+              <ColorTile color={swatchColor} size={20} />
+              {triggerShowValue && (
+                <span className="text-[13px] text-foreground tabular-nums">
+                  {valueLabel}
+                </span>
+              )}
+              {triggerLabel && triggerLabelPosition === "right" && (
+                <span className="px-1 text-[13px] text-muted-foreground select-none">
+                  {triggerLabel}
+                </span>
+              )}
+            </>
           )}
           {triggerShowRemove && (
             <span
@@ -1697,7 +1707,7 @@ const ColorPickerPopover = forwardRef<HTMLDivElement, ColorPickerPopoverProps>(
                 top: rect.bottom + 6,
                 left: rect.left,
                 // Above modal dialogs (z-50) and re-enable hits: Radix sets body pointer-events:none.
-                zIndex: 100,
+                zIndex: panelZIndex,
                 pointerEvents: "auto",
               }}
             >

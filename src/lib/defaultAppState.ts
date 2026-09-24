@@ -13,6 +13,7 @@ export const DEFAULT_SETTINGS: Settings = {
 export const DEFAULT_APP_STATE: AppState = {
   sections: [],
   standaloneLinks: [],
+  croppedPages: [],
   layoutMode: "canvas",
   editMode: false,
   settings: { ...DEFAULT_SETTINGS },

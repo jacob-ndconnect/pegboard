@@ -26,7 +26,8 @@ A Chrome extension that replaces the default new tab page with a customizable co
 | `Section`          | `id`, `name`, `accentColor`, `links[]`, `position` (`x`, `y` for Canvas), optional `canvasColumnSpan` (link **tiles per row** on canvas; default = link count; width math in `canvasGrid.ts` — tile stride matches `LinkCard` + `SectionLinkDraggable` spacing) |
 | `SectionLabelSize` | Tailwind text classes (`text-xs` … `text-3xl`) for canvas section title typography                                                                                                                                                                              |
 | `Settings`         | `searchShortcut`, `settingsShortcut`, `themeShortcut` (empty disables), `sectionLabelSize`, `canvasRememberScroll`, `canvasScrollSync`, `canvasRestoreScrollOnResize`                                                                                                                             |
-| `AppState`         | `sections[]`, `layoutMode` ("canvas" \| "list" \| "folders"), `editMode`, `settings`, optional `updatedAt` (ms, last save — which sync snapshot wins) |
+| `CroppedPage`      | `id`, `url`, `label`, `accentColor`, canvas `position`, `frame` `{width,height}` (iframe layout at save), `crop` `{x,y,width,height}` in frame space — canvas-only cutouts ([`docs/features/cropped-page-widgets.md`](./docs/features/cropped-page-widgets.md)) |
+| `AppState`         | `sections[]`, `standaloneLinks[]`, `croppedPages[]`, `layoutMode` ("canvas" \| "list" \| "folders"), `editMode`, `settings`, optional `updatedAt` (ms, last save — which sync snapshot wins) |
 | `BadgeStyle`       | `emoji`, `color` (hex)                                                                                                                                                                                                                                          |
 
 ---

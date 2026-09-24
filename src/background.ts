@@ -11,6 +11,7 @@ import {
   preferIncoming,
   stampAppState,
 } from "@/lib/appStateRevision"
+import { enableIframeEmbedHeaders } from "@/lib/iframeEmbedHeaders"
 
 const MAX_SUGGESTIONS = 6
 const CONTEXT_MENU_PIN_ID = "pegboard-pin-to-standalone"
@@ -78,6 +79,7 @@ function coalesceAppState(raw: unknown): AppState {
   return {
     sections: Array.isArray(r.sections) ? r.sections : [],
     standaloneLinks: Array.isArray(r.standaloneLinks) ? r.standaloneLinks : [],
+    croppedPages: Array.isArray(r.croppedPages) ? r.croppedPages : [],
     layoutMode:
       r.layoutMode === "list" ||
       r.layoutMode === "folders" ||
@@ -100,7 +102,15 @@ function registerContextMenus(): void {
   })
 }
 
-chrome.runtime.onInstalled.addListener(registerContextMenus)
+function installEmbedHeaderBypass(): void {
+  void enableIframeEmbedHeaders()
+}
+
+chrome.runtime.onInstalled.addListener(() => {
+  registerContextMenus()
+  installEmbedHeaderBypass()
+})
+chrome.runtime.onStartup.addListener(installEmbedHeaderBypass)
 
 chrome.contextMenus.onClicked.addListener((info, tab) => {
   if (info.menuItemId !== CONTEXT_MENU_PIN_ID) return

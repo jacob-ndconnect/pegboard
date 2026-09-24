@@ -9,10 +9,12 @@ import {
 } from "@dnd-kit/core"
 import type { DragEndEvent } from "@dnd-kit/core"
 import {
+  CROPPED_PAGE_ID_PREFIX,
   DROP_STANDALONE_ID,
   FLOATING_LINK_ID_PREFIX,
   parseSectionLinkDragId,
 } from "@/components/dnd/linkDragIds"
+import { FloatingCroppedPageCard } from "@/components/cropped-page/FloatingCroppedPageCard"
 import { preferSectionOverStandalone } from "@/components/dnd/preferSectionDropCollision"
 import { applyLinkDragEnd } from "@/lib/applyLinkDragEnd"
 import { getDefaultCanvasSectionPosition } from "@/lib/canvasGrid"
@@ -34,6 +36,8 @@ type CanvasProps = {
   onEditLink: (sectionId: string, linkId: string) => void
   onAddLink: (sectionId: string) => void
   onEditStandaloneLink: (linkId: string) => void
+  onEditCroppedPage: (pageId: string, originRect: DOMRect) => void
+  onExpandCroppedPage: (pageId: string, originRect: DOMRect) => void
 }
 
 const DEFAULT_POSITION = { x: 40, y: 40 }
@@ -85,8 +89,10 @@ export function Canvas({
   onEditLink,
   onAddLink,
   onEditStandaloneLink,
+  onEditCroppedPage,
+  onExpandCroppedPage,
 }: CanvasProps) {
-  const { sections, standaloneLinks, editMode, settings } = state
+  const { sections, standaloneLinks, croppedPages, editMode, settings } = state
   const sectionsWithPosition = sections.map((s, i) => ({
     ...s,
     position: normalizePosition(s.position, i),
@@ -108,7 +114,7 @@ export function Canvas({
     setBoardSize((prev) =>
       prev.width === next.width && prev.height === next.height ? prev : next
     )
-  }, [sections, standaloneLinks, editMode])
+  }, [sections, standaloneLinks, croppedPages, editMode])
 
   useCanvasScrollAnchor({
     scrollRef: scrollContainerRef,
@@ -153,6 +159,13 @@ export function Canvas({
       startPositionRef.current = { x: pos.x, y: pos.y }
       return
     }
+    if (activeId.startsWith(CROPPED_PAGE_ID_PREFIX)) {
+      const pageId = activeId.slice(CROPPED_PAGE_ID_PREFIX.length)
+      const page = croppedPages.find((p) => p.id === pageId)
+      const pos = page?.position ?? DEFAULT_POSITION
+      startPositionRef.current = { x: pos.x, y: pos.y }
+      return
+    }
     const section = sectionsWithPosition.find((s) => s.id === event.active.id)
     const pos = section?.position ?? DEFAULT_POSITION
     startPositionRef.current = { x: pos.x, y: pos.y }
@@ -194,6 +207,16 @@ export function Canvas({
         }
       }
 
+      if (activeId.startsWith(CROPPED_PAGE_ID_PREFIX)) {
+        const pageId = activeId.slice(CROPPED_PAGE_ID_PREFIX.length)
+        return {
+          ...prev,
+          croppedPages: prev.croppedPages.map((p) =>
+            p.id === pageId ? { ...p, position: newPosition } : p
+          ),
+        }
+      }
+
       const newSections = prev.sections.map((s, i) => {
         const pos = normalizePosition(s.position, i)
         const isActive = s.id === event.active.id
@@ -219,11 +242,12 @@ export function Canvas({
         onPointerDownCapture={onPointerDownCapture}
         onLostPointerCapture={onLostPointerCapture}
         className={cn(
-          "absolute inset-0 overflow-auto scrollbar-none",
+          "absolute inset-0 overflow-auto scrollbar-none [overflow-anchor:none]",
           editMode && "canvas-grid",
           isPanning && "cursor-grabbing",
           !isPanning && spaceDown && "cursor-grab"
         )}
+        data-canvas-scroll=""
       >
 
         <div ref={padRef} className="relative box-border w-max">
@@ -269,6 +293,18 @@ export function Canvas({
                 editMode={editMode}
                 isDraggable={!DRAGGABLE_ONLY_IN_EDIT || editMode}
                 onEdit={() => onEditStandaloneLink(entry.link.id)}
+                onTransformChange={handleTransformChange}
+              />
+            ))}
+            {croppedPages.map((page) => (
+              <FloatingCroppedPageCard
+                key={page.id}
+                page={page}
+                editMode={editMode}
+                sectionLabelSize={settings.sectionLabelSize}
+                isDraggable={!DRAGGABLE_ONLY_IN_EDIT || editMode}
+                onEdit={(rect) => onEditCroppedPage(page.id, rect)}
+                onExpand={(rect) => onExpandCroppedPage(page.id, rect)}
                 onTransformChange={handleTransformChange}
               />
             ))}

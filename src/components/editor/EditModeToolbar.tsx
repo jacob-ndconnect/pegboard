@@ -13,6 +13,7 @@ import type { AppState } from "@/types"
 import { InputGroup, InputGroupAddon, InputGroupInput } from "../ui/input-group"
 import {
   ArrowClockwiseIcon,
+  BrowserIcon,
   FloppyDiskIcon,
   GearIcon,
   LinkSimpleIcon,
@@ -55,6 +56,7 @@ type EditModeToolbarProps = {
   save: (newStateOrUpdater: AppState | ((prev: AppState) => AppState)) => void
   onAddSection: () => void
   onAddStandaloneLink: () => void
+  onAddCroppedPage?: () => void
   searchOpen: boolean
   onSearchClick: () => void
   onSettingsClick: () => void
@@ -69,6 +71,7 @@ export function EditModeToolbar({
   save,
   onAddSection,
   onAddStandaloneLink,
+  onAddCroppedPage,
   searchOpen,
   onSearchClick,
   onSettingsClick,
@@ -79,7 +82,9 @@ export function EditModeToolbar({
 }: EditModeToolbarProps) {
   const { editMode, layoutMode } = state
   const isBoardEmpty =
-    state.sections.length === 0 && state.standaloneLinks.length === 0
+    state.sections.length === 0 &&
+    state.standaloneLinks.length === 0 &&
+    state.croppedPages.length === 0
 
   const toggleEditMode = () => {
     save({ ...state, editMode: !editMode })
@@ -236,7 +241,19 @@ export function EditModeToolbar({
             className="fixed right-4 bottom-4 left-4 z-[110] flex justify-center"
             aria-label="Edit actions toolbar"
           >
-            <div className="flex items-center border border-border bg-background/95 p-1 shadow-sm backdrop-blur">
+            <div className="flex flex-wrap items-center justify-center border border-border bg-background/95 p-1 shadow-sm backdrop-blur">
+              {layoutMode === "canvas" && onAddCroppedPage ? (
+                <Button
+                  variant="secondary"
+                  size="lg"
+                  onClick={onAddCroppedPage}
+                  className="m-1 cursor-pointer gap-1.5 rounded-full"
+                  aria-label="Add cutout"
+                >
+                  <BrowserIcon className="size-4" />
+                  <span className="hidden sm:inline">Add cutout</span>
+                </Button>
+              ) : null}
               <Button
                 variant="secondary"
                 size="lg"

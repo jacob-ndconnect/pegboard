@@ -18,6 +18,24 @@ export type StandaloneLinkEntry = {
   position: { x: number; y: number }
 }
 
+export type CroppedPageRect = {
+  x: number
+  y: number
+  width: number
+  height: number
+}
+
+export type CroppedPage = {
+  id: string
+  url: string
+  label: string
+  accentColor: string
+  position: { x: number; y: number }
+  /** Iframe layout size when the crop was saved. */
+  frame: { width: number; height: number }
+  crop: CroppedPageRect
+}
+
 export type Section = {
   id: string
   name: string
@@ -61,6 +79,7 @@ export const UNGROUPED_SECTION_ID = "__ungrouped__"
 export type AppState = {
   sections: Section[]
   standaloneLinks: StandaloneLinkEntry[]
+  croppedPages: CroppedPage[]
   layoutMode: "canvas" | "list" | "folders"
   editMode: boolean
   settings: Settings

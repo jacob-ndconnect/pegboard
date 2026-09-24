@@ -6,7 +6,15 @@
   "chrome_url_overrides": {
     "newtab": "index.html"
   },
-  "permissions": ["storage", "favicon", "contextMenus"],
+  "permissions": [
+    "storage",
+    "favicon",
+    "contextMenus",
+    "declarativeNetRequest",
+    "declarativeNetRequestWithHostAccess",
+    "webNavigation"
+  ],
+  "host_permissions": ["<all_urls>"],
   "omnibox": { "keyword": "pb" },
   "background": {
     "service_worker": "background.js"

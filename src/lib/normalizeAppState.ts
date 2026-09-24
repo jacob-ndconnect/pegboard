@@ -4,6 +4,7 @@ import {
   normalizeCanvasColumnSpan,
 } from "@/lib/canvasGrid"
 import { DEFAULT_SETTINGS } from "@/lib/defaultAppState"
+import { normalizeCroppedPages } from "@/lib/croppedPage"
 import { readUpdatedAt } from "@/lib/appStateRevision"
 
 export function normalizeLayoutMode(mode: unknown): AppState["layoutMode"] {
@@ -81,6 +82,7 @@ export function normalizeAppState(appState: AppState): AppState {
     layoutMode: normalizeLayoutMode(appState.layoutMode),
     settings: mergeSettingsWithDefaults(appState.settings),
     standaloneLinks: appState.standaloneLinks ?? [],
+    croppedPages: normalizeCroppedPages(appState.croppedPages),
     editMode: appState.editMode === true,
   }
   if (updatedAt > 0) next.updatedAt = updatedAt
@@ -106,10 +108,12 @@ export function applyStoredStateBackfill(appState: AppState): {
 
   const mergedSettings = mergeSettingsWithDefaults(next.settings)
   const mergedStandalone = next.standaloneLinks ?? []
+  const mergedCropped = normalizeCroppedPages(next.croppedPages)
   const layoutMode = normalizeLayoutMode(next.layoutMode)
 
   if (settingsNeedBackfill(next.settings)) shouldPersist = true
   if (next.standaloneLinks === undefined) shouldPersist = true
+  if (next.croppedPages === undefined) shouldPersist = true
   if (layoutMode !== next.layoutMode) shouldPersist = true
 
   next = {
@@ -117,6 +121,7 @@ export function applyStoredStateBackfill(appState: AppState): {
     layoutMode,
     settings: mergedSettings,
     standaloneLinks: mergedStandalone,
+    croppedPages: mergedCropped,
   }
 
   return { state: normalizeAppState(next), shouldPersist }

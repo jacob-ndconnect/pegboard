@@ -2,6 +2,12 @@ import { UNGROUPED_SECTION_ID } from "@/types"
 
 export const FLOATING_LINK_ID_PREFIX = "float:" as const
 
+export const CROPPED_PAGE_ID_PREFIX = "crop:" as const
+
+export function croppedPageDragId(pageId: string): string {
+  return `${CROPPED_PAGE_ID_PREFIX}${pageId}`
+}
+
 export function floatingLinkDragId(linkId: string): string {
   return `${FLOATING_LINK_ID_PREFIX}${linkId}`
 }

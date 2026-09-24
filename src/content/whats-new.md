@@ -1,11 +1,16 @@
 ---
-id: 2
+id: 3
 title: What's new
 ---
 
-## Configurable light/dark shortcut
+## Cutouts
 
-The D key used to always flip light and dark. You can change that shortcut under Settings → Keyboard shortcuts, or clear it to turn it off.
+You can pin a live cutout of a webpage on the canvas! Just click 'edit' -> 'add cutout'.
+Right now these are view-only on the canvas, best for creating a window into a dashboard or something. You can click the expand button to open it full-size right in PegBoard, or click the icon to open the full page.
+
+---
+
+v Older stuff v
 
 ## Import/Export your data
 
