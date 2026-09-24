@@ -6,11 +6,20 @@ title: What's new
 ## Cutouts
 
 You can pin a live cutout of a webpage on the canvas! Just click 'edit' -> 'add cutout'.
+
 Right now these are view-only on the canvas, best for creating a window into a dashboard or something. You can click the expand button to open it full-size right in PegBoard, or click the icon to open the full page.
+
+&nbsp;
+
+&nbsp;
 
 ---
 
+&nbsp;
+
 v Older stuff v
+
+&nbsp;
 
 ## Import/Export your data
 
