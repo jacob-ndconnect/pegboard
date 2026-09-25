@@ -8,7 +8,9 @@ import {
   clampCropToFrame,
   croppedPageLabelFromUrl,
   croppedPageRevealShift,
+  cutoutFrameCollapsed,
   defaultCropRect,
+  openCutoutContentSize,
 } from "@/lib/croppedPage"
 import type { CroppedPage, CroppedPageRect } from "@/types"
 import { CroppedPageIframe } from "./CroppedPageIframe"
@@ -163,8 +165,20 @@ export function CroppedPageCaptureOverlay({
   const cropInitializedRef = useRef(false)
   const closeActionRef = useRef<CloseAction | null>(null)
   const finishedRef = useRef(false)
-  const [frameSize, setFrameSize] = useState({ width: 800, height: 600 })
-  const frameSpace = session.existing?.frame ?? frameSize
+  const savedLayoutRef = useRef<{
+    frame: { width: number; height: number }
+    crop: CroppedPageRect
+  } | null>(null)
+  const [target] = useState(targetFrameRect)
+  const [frameSize, setFrameSize] = useState({
+    width: target.width,
+    height: target.height,
+  })
+  const frameCollapsed =
+    session.existing != null &&
+    cutoutFrameCollapsed(session.existing.frame, session.existing.crop, frameSize)
+  const frameSpace =
+    session.existing && !frameCollapsed ? session.existing.frame : frameSize
   const [crop, setCrop] = useState<CroppedPageRect>(() =>
     session.existing?.crop ?? defaultCropRect(800, 600)
   )
@@ -184,11 +198,10 @@ export function CroppedPageCaptureOverlay({
   const reducedMotion =
     typeof window !== "undefined" &&
     window.matchMedia("(prefers-reduced-motion: reduce)").matches
-  const [target] = useState(targetFrameRect)
   const [phase, setPhase] = useState<Phase>(
     reducedMotion || !originRect ? "open" : "from"
   )
-  const reuseFrame = session.pageId != null
+  const reuseFrame = session.pageId != null && !frameCollapsed
 
   useEffect(() => {
     if (!reuseFrame) return
@@ -272,21 +285,25 @@ export function CroppedPageCaptureOverlay({
     const el = frameRef.current
     if (!el) return
     const measure = () => {
-      const w = el.clientWidth
-      const h = el.clientHeight
-      if (w > 0 && h > 0) {
-        setFrameSize({ width: w, height: h })
-        if (!cropInitializedRef.current && !session.existing) {
-          cropInitializedRef.current = true
-          setCrop(defaultCropRect(w, h))
-        }
+      const panel = el.closest("[data-cutout-panel]")
+      if (!(panel instanceof HTMLElement)) return
+      const next = openCutoutContentSize(
+        panel.getBoundingClientRect(),
+        target,
+        { width: el.clientWidth, height: el.clientHeight }
+      )
+      if (!next) return
+      setFrameSize(next)
+      if (!cropInitializedRef.current && !session.existing) {
+        cropInitializedRef.current = true
+        setCrop(defaultCropRect(next.width, next.height))
       }
     }
     measure()
     const ro = new ResizeObserver(measure)
     ro.observe(el)
     return () => ro.disconnect()
-  }, [session.existing, session.url])
+  }, [session.existing, target])
 
   const onPointerDown = useCallback(
     (handle: CropHandle, e: React.PointerEvent) => {
@@ -343,14 +360,18 @@ export function CroppedPageCaptureOverlay({
       const id = session.pageId ?? session.existing?.id ?? crypto.randomUUID()
       const position = session.existing?.position ?? { x: 120, y: 120 }
       const nextLabel = label.trim() || croppedPageLabelFromUrl(session.url)
+      const laidOut = savedLayoutRef.current ?? {
+        frame: frameSpace,
+        crop: clampCropToFrame(crop, frameSpace.width, frameSpace.height),
+      }
       onSave({
         id,
         url: editorUrl,
         label: nextLabel,
         accentColor,
         position,
-        frame: frameSpace,
-        crop: clampCropToFrame(crop, frameSpace.width, frameSpace.height),
+        frame: laidOut.frame,
+        crop: laidOut.crop,
       })
       return
     }
@@ -372,13 +393,26 @@ export function CroppedPageCaptureOverlay({
     (action: CloseAction) => {
       if (phase === "to") return
       closeActionRef.current = action
+      if (action === "save") {
+        savedLayoutRef.current = {
+          frame: frameSpace,
+          crop: clampCropToFrame(crop, frameSpace.width, frameSpace.height),
+        }
+      }
       if (reducedMotion || !originRect) {
         finishClose()
         return
       }
       setPhase("to")
     },
-    [finishClose, originRect, phase, reducedMotion]
+    [
+      crop,
+      finishClose,
+      frameSpace,
+      originRect,
+      phase,
+      reducedMotion,
+    ]
   )
 
   useEffect(() => {
@@ -411,6 +445,7 @@ export function CroppedPageCaptureOverlay({
         )}
       />
       <div
+        data-cutout-panel
         className={cn(
           "absolute flex flex-col overflow-hidden bg-background shadow-xl",
           !reducedMotion &&

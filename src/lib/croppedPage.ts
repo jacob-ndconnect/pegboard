@@ -113,6 +113,41 @@ export function defaultCropRect(
   }
 }
 
+const OPEN_PANEL_SLACK = 2
+
+/**
+ * Editor content size after the panel has opened. Null while it is still
+ * animating from the tile, so save does not store that smaller box as the iframe.
+ */
+export function openCutoutContentSize(
+  panel: { width: number; height: number },
+  target: { width: number; height: number },
+  content: { width: number; height: number }
+): { width: number; height: number } | null {
+  if (
+    panel.width < target.width - OPEN_PANEL_SLACK ||
+    panel.height < target.height - OPEN_PANEL_SLACK
+  ) {
+    return null
+  }
+  if (content.width < 1 || content.height < 1) return null
+  return { width: content.width, height: content.height }
+}
+
+/** True when a previous save stored the iframe as the crop instead of the full page. */
+export function cutoutFrameCollapsed(
+  frame: { width: number; height: number },
+  crop: { width: number; height: number },
+  openFrame: { width: number; height: number }
+): boolean {
+  const matchesCrop =
+    Math.abs(frame.width - crop.width) < 2 &&
+    Math.abs(frame.height - crop.height) < 2
+  const smallerThanEditor =
+    frame.width < openFrame.width - 40 || frame.height < openFrame.height - 40
+  return matchesCrop && smallerThanEditor
+}
+
 /** How far to shift the full frame so the crop meets the clip as the clip grows. */
 export function croppedPageRevealShift(
   frame: { width: number; height: number },
