@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { PencilSimpleIcon } from "@phosphor-icons/react"
-import { getFaviconFallbackUrl, getFaviconUrl } from "@/lib/favicon"
+import { faviconCandidateUrls } from "@/lib/favicon"
 import { cn } from "@/lib/utils"
 import type { Link, Section } from "@/types"
 import { useReadableAccent } from "@/hooks/useReadableAccent"
@@ -13,6 +13,10 @@ type LinkCardProps = {
   isDragging?: boolean
   onEdit?: () => void
   accentColor?: Section["accentColor"]
+  /** Tried before the usual favicon sources. */
+  iconUrl?: string
+  /** Chrome's cached favicon before the remote lookup. Used by the toolbar popup. */
+  preferCachedFavicon?: boolean
 }
 
 function getPlaceholderColor(label: string): string {
@@ -26,28 +30,33 @@ export function LinkCard({
   isDragging = false,
   onEdit,
   accentColor,
+  iconUrl,
+  preferCachedFavicon = false,
 }: LinkCardProps) {
+  const sources = faviconCandidateUrls(link.url, {
+    preferred: iconUrl,
+    cachedFirst: preferCachedFavicon,
+  })
+  const sourceKey = sources.join("\n")
   const [faviconError, setFaviconError] = useState(false)
-  const [useFallback, setUseFallback] = useState(false)
-  const [prevUrl, setPrevUrl] = useState(link.url)
-  if (prevUrl !== link.url) {
-    setPrevUrl(link.url)
+  const [sourceIndex, setSourceIndex] = useState(0)
+  const [prevSourceKey, setPrevSourceKey] = useState(sourceKey)
+  if (prevSourceKey !== sourceKey) {
+    setPrevSourceKey(sourceKey)
+    setSourceIndex(0)
     setFaviconError(false)
-    setUseFallback(false)
   }
-  const faviconUrl = getFaviconUrl(link.url)
-  const fallbackUrl = getFaviconFallbackUrl(link.url)
-  const currentSrc = useFallback ? fallbackUrl : faviconUrl
+  const currentSrc = sources[sourceIndex] ?? ""
   const showPlaceholder = faviconError || !currentSrc
   const placeholderColor = getPlaceholderColor(link.label)
   const firstLetter = link.label.charAt(0).toUpperCase() || "?"
 
   const handleFaviconError = () => {
-    if (!useFallback && fallbackUrl) {
-      setUseFallback(true)
-    } else {
-      setFaviconError(true)
+    if (sourceIndex < sources.length - 1) {
+      setSourceIndex((index) => index + 1)
+      return
     }
+    setFaviconError(true)
   }
 
   const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
@@ -143,6 +152,7 @@ export function LinkCard({
               <span className="text-2xl font-semibold">{firstLetter}</span>
             ) : (
               <img
+                key={currentSrc}
                 src={currentSrc}
                 alt=""
                 draggable={editMode ? false : undefined}

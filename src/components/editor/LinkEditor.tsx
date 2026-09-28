@@ -12,8 +12,9 @@ import { Input } from "@/components/ui/input"
 import { ColorPickerField } from "./ColorPickerField"
 import { BooleanSetting } from "@/components/settings/BooleanSetting"
 import { LinkCard } from "@/components/canvas/LinkCard"
+import { canonicalPinUrl } from "@/lib/appendStandalonePin"
 import type { Link } from "@/types"
-import { FloppyDiskIcon, TrashIcon } from "@phosphor-icons/react/dist/ssr"
+import { ArrowLeftIcon, FloppyDiskIcon, TrashIcon } from "@phosphor-icons/react/dist/ssr"
 
 const DEFAULT_BADGE_COLOR = "#ef4444"
 
@@ -21,8 +22,17 @@ type LinkEditorProps = {
   open: boolean
   onOpenChange: (open: boolean) => void
   link: Link | null
-  onSave: (link: Link) => void
+  /** Return false to keep the editor open (for example a duplicate pin). */
+  onSave: (link: Link) => void | boolean | Promise<void | boolean>
   onDelete?: (linkId: string) => void
+  /** Toolbar popup: fields only, no dialog over a page. */
+  embedded?: boolean
+  initialUrl?: string
+  initialLabel?: string
+  onBack?: () => void
+  notice?: string | null
+  /** Favicon of the open tab, used while the URL still matches that tab. */
+  previewIconUrl?: string
 }
 
 export function LinkEditor({
@@ -31,15 +41,28 @@ export function LinkEditor({
   link,
   onSave,
   onDelete,
+  embedded = false,
+  initialUrl = "",
+  initialLabel = "",
+  onBack,
+  notice,
+  previewIconUrl,
 }: LinkEditorProps) {
-  const [url, setUrl] = useState(() => link?.url ?? "")
-  const [label, setLabel] = useState(() => link?.label ?? "")
+  const [url, setUrl] = useState(() => link?.url ?? initialUrl)
+  const [label, setLabel] = useState(() => link?.label ?? initialLabel)
   const [searchTerms, setSearchTerms] = useState(() => link?.searchTerms ?? "")
   const [badgeEmoji, setBadgeEmoji] = useState(() => link?.badge?.emoji ?? "")
   const [badgeColor, setBadgeColor] = useState(
     () => link?.badge?.color ?? DEFAULT_BADGE_COLOR
   )
   const [invertIcon, setInvertIcon] = useState(() => link?.invertIcon === true)
+
+  const previewIcon =
+    previewIconUrl &&
+    canonicalPinUrl(url) != null &&
+    canonicalPinUrl(url) === canonicalPinUrl(initialUrl)
+      ? previewIconUrl
+      : undefined
 
   const previewLink: Link = {
     id: link?.id ?? "preview",
@@ -57,19 +80,23 @@ export function LinkEditor({
     const trimmedLabel = label.trim()
     if (!trimmedUrl || !trimmedLabel) return
 
-    onSave({
-      id: link?.id ?? crypto.randomUUID(),
-      url: trimmedUrl,
-      label: trimmedLabel,
-      searchTerms: searchTerms.trim() || undefined,
-      badge:
-        badgeEmoji.trim().length > 0
-          ? { emoji: badgeEmoji.slice(0, 2), color: badgeColor }
-          : undefined,
-      ...(invertIcon ? { invertIcon: true } : {}),
-      ...(link?.customIcon ? { customIcon: link.customIcon } : {}),
+    void Promise.resolve(
+      onSave({
+        id: link?.id ?? crypto.randomUUID(),
+        url: trimmedUrl,
+        label: trimmedLabel,
+        searchTerms: searchTerms.trim() || undefined,
+        badge:
+          badgeEmoji.trim().length > 0
+            ? { emoji: badgeEmoji.slice(0, 2), color: badgeColor }
+            : undefined,
+        ...(invertIcon ? { invertIcon: true } : {}),
+        ...(link?.customIcon ? { customIcon: link.customIcon } : {}),
+      })
+    ).then((stayOpen) => {
+      if (stayOpen === false) return
+      onOpenChange(false)
     })
-    onOpenChange(false)
   }
 
   const handleDelete = () => {
@@ -80,14 +107,43 @@ export function LinkEditor({
   }
 
   const isEditing = !!link
+  const title = isEditing ? "Edit Link" : embedded ? "Add shortcut" : "Add Link"
 
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent showCloseButton className="p-0 sm:max-w-md">
+  const body = (
+    <>
+      {embedded ? (
+        <div className="flex items-center gap-2 px-4 pt-4">
+          {onBack ? (
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-sm"
+              className="cursor-pointer rounded-none"
+              aria-label="Back"
+              onClick={onBack}
+            >
+              <ArrowLeftIcon className="size-4" />
+            </Button>
+          ) : null}
+          <h2 className="font-heading text-base leading-none font-medium">
+            {title}
+          </h2>
+        </div>
+      ) : (
         <DialogHeader className="px-6 pt-6">
-          <DialogTitle>{isEditing ? "Edit Link" : "Add Link"}</DialogTitle>
+          <DialogTitle>{title}</DialogTitle>
         </DialogHeader>
-        <ScrollArea className="max-h-[min(70dvh,calc(90dvh-10rem))]">
+      )}
+      {notice ? (
+        <p className="px-6 pt-2 text-xs text-destructive">{notice}</p>
+      ) : null}
+      <ScrollArea
+        className={
+          embedded
+            ? "max-h-[520px]"
+            : "max-h-[min(70dvh,calc(90dvh-10rem))]"
+        }
+      >
             <div className="flex flex-col gap-4 px-6 py-2">
           <div className="flex flex-col gap-2">
             <label
@@ -171,7 +227,12 @@ export function LinkEditor({
               Preview
             </span>
             <div className="flex justify-center rounded-lg border border-border bg-muted/30 p-6">
-              <LinkCard link={previewLink} editMode={false} />
+              <LinkCard
+                link={previewLink}
+                editMode={false}
+                iconUrl={previewIcon}
+                preferCachedFavicon={embedded}
+              />
             </div>
             </div>
             </div>
@@ -195,7 +256,22 @@ export function LinkEditor({
               <FloppyDiskIcon /> Save
             </Button>
           </DialogFooter>
-        </ScrollArea>
+      </ScrollArea>
+    </>
+  )
+
+  if (embedded) {
+    return (
+      <div className="flex w-[28rem] flex-col bg-popover text-popover-foreground">
+        {body}
+      </div>
+    )
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent showCloseButton className="p-0 sm:max-w-md">
+        {body}
       </DialogContent>
     </Dialog>
   )

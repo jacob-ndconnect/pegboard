@@ -27,6 +27,7 @@ type CroppedPageSetupDialogProps = {
   open: boolean
   onOpenChange: (open: boolean) => void
   initialUrl?: string
+  initialLabel?: string
   initialAccentColor?: string
   onContinue: (url: string, accentColor: string, label: string) => void
 }
@@ -35,20 +36,21 @@ export function CroppedPageSetupDialog({
   open,
   onOpenChange,
   initialUrl = "",
+  initialLabel = "",
   initialAccentColor = DEFAULT_COLOR,
   onContinue,
 }: CroppedPageSetupDialogProps) {
   const [url, setUrl] = useState(initialUrl)
-  const [label, setLabel] = useState("")
+  const [label, setLabel] = useState(initialLabel)
   const [accentColor, setAccentColor] = useState(initialAccentColor)
 
   useEffect(() => {
     if (open) {
       setUrl(initialUrl)
-      setLabel("")
+      setLabel(initialLabel)
       setAccentColor(initialAccentColor)
     }
-  }, [open, initialUrl, initialAccentColor])
+  }, [open, initialUrl, initialLabel, initialAccentColor])
 
   const handleContinue = () => {
     const normalized = normalizeUrlInput(url)

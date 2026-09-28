@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react"
+import { useState, useCallback, useEffect, useRef } from "react"
 import { Canvas } from "@/components/canvas/Canvas"
 import { ListView } from "@/components/list/ListView"
 import { FolderView } from "@/components/folder/FolderView"
@@ -33,6 +33,11 @@ import {
 import { CroppedPageExpandOverlay } from "@/components/cropped-page/CroppedPageExpandOverlay"
 import { CroppedPageMirror } from "@/components/cropped-page/CroppedPageMirror"
 import { croppedPageSpawnPosition } from "@/lib/croppedPage"
+import {
+  TOOLBAR_CUTOUT_LABEL_PARAM,
+  TOOLBAR_CUTOUT_PARAM,
+  readToolbarCutoutIntent,
+} from "@/lib/toolbarCutout"
 import type { CroppedPage } from "@/types"
 
 type LinkEditorScope =
@@ -56,7 +61,16 @@ export function App() {
   const [showWhatsNewChip, setShowWhatsNewChip] = useState(false)
   const [onboardingOpen, setOnboardingOpen] = useState(false)
   const [emptyImportError, setEmptyImportError] = useState<string | null>(null)
-  const [croppedSetupOpen, setCroppedSetupOpen] = useState(false)
+  const [toolbarCutout] = useState(() =>
+    readToolbarCutoutIntent(window.location.search)
+  )
+  const [cutoutSetupSeed, setCutoutSetupSeed] = useState(toolbarCutout)
+  /** New cutout saved from the toolbar launch should land on the canvas. */
+  const forceCanvasOnNextCutout = useRef(toolbarCutout != null)
+  const cutoutSetupContinued = useRef(false)
+  const [croppedSetupOpen, setCroppedSetupOpen] = useState(
+    () => toolbarCutout != null
+  )
   const [captureSession, setCaptureSession] =
     useState<CroppedPageCaptureSession | null>(null)
   const [expandedCroppedPageId, setExpandedCroppedPageId] = useState<
@@ -66,6 +80,19 @@ export function App() {
   const [editOriginRect, setEditOriginRect] = useState<DOMRect | null>(null)
 
   const { setTheme, toggleLightDark } = useTheme()
+
+  useEffect(() => {
+    if (!toolbarCutout) return
+    const params = new URLSearchParams(window.location.search)
+    params.delete(TOOLBAR_CUTOUT_PARAM)
+    params.delete(TOOLBAR_CUTOUT_LABEL_PARAM)
+    const qs = params.toString()
+    window.history.replaceState(
+      null,
+      "",
+      `${window.location.pathname}${qs ? `?${qs}` : ""}${window.location.hash}`
+    )
+  }, [toolbarCutout])
 
   useEffect(() => {
     if (!loaded) return
@@ -98,6 +125,11 @@ export function App() {
     },
     [markWhatsNewSeen]
   )
+
+  const dismissCapture = useCallback(() => {
+    forceCanvasOnNextCutout.current = false
+    setCaptureSession(null)
+  }, [])
 
   const searchShortcut = state.settings.searchShortcut
   const settingsShortcut = state.settings.settingsShortcut
@@ -138,9 +170,12 @@ export function App() {
       setExpandedCroppedPageId(null)
       setExpandOriginRect(null)
     } else if (captureSession) {
-      setCaptureSession(null)
+      dismissCapture()
     } else if (croppedSetupOpen) {
       setCroppedSetupOpen(false)
+      if (!cutoutSetupContinued.current) {
+        forceCanvasOnNextCutout.current = false
+      }
     } else if (state.editMode) {
       save((prev) => ({ ...prev, editMode: false }))
     }
@@ -155,6 +190,7 @@ export function App() {
     linkEditorOpen,
     expandedCroppedPageId,
     captureSession,
+    dismissCapture,
     croppedSetupOpen,
     state.editMode,
     save,
@@ -309,6 +345,7 @@ export function App() {
   )
 
   const openCroppedPageSetup = useCallback(() => {
+    setCutoutSetupSeed(null)
     setCroppedSetupOpen(true)
   }, [])
 
@@ -332,6 +369,7 @@ export function App() {
 
   const handleCroppedPageContinue = useCallback(
     (url: string, accentColor: string, label: string) => {
+      cutoutSetupContinued.current = true
       setCaptureSession({
         pageId: null,
         url,
@@ -342,8 +380,19 @@ export function App() {
     []
   )
 
+  const handleCroppedSetupOpenChange = useCallback((open: boolean) => {
+    setCroppedSetupOpen(open)
+    if (open || cutoutSetupContinued.current) {
+      cutoutSetupContinued.current = false
+      return
+    }
+    forceCanvasOnNextCutout.current = false
+  }, [])
+
   const handleCroppedPageSave = useCallback(
     (page: CroppedPage) => {
+      const forceCanvas = forceCanvasOnNextCutout.current
+      if (forceCanvas) forceCanvasOnNextCutout.current = false
       save((prev) => {
         const idx = prev.croppedPages.findIndex((p) => p.id === page.id)
         const position =
@@ -355,7 +404,11 @@ export function App() {
           idx >= 0
             ? prev.croppedPages.map((p, i) => (i === idx ? nextPage : p))
             : [...prev.croppedPages, nextPage]
-        return { ...prev, croppedPages }
+        return {
+          ...prev,
+          croppedPages,
+          ...(forceCanvas && idx < 0 ? { layoutMode: "canvas" as const } : {}),
+        }
       })
       setCaptureSession(null)
     },
@@ -547,7 +600,9 @@ export function App() {
       />
       <CroppedPageSetupDialog
         open={croppedSetupOpen}
-        onOpenChange={setCroppedSetupOpen}
+        onOpenChange={handleCroppedSetupOpenChange}
+        initialUrl={cutoutSetupSeed?.url ?? ""}
+        initialLabel={cutoutSetupSeed?.label ?? ""}
         onContinue={handleCroppedPageContinue}
       />
       {state.croppedPages.map((page) => (
@@ -565,7 +620,7 @@ export function App() {
           onDelete={
             captureSession.pageId ? handleCroppedPageCaptureDelete : undefined
           }
-          onCancel={() => setCaptureSession(null)}
+          onCancel={dismissCapture}
         />
       ) : null}
       {expandedCroppedPage ? (

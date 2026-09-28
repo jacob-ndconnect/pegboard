@@ -1,5 +1,12 @@
-import type { AppState, Link } from "@/types"
+import type { AppState, BadgeStyle, Link } from "@/types"
 import { standaloneSpawnPosition } from "@/lib/standaloneSpawnPosition"
+
+export type StandalonePinDetails = {
+  id?: string
+  searchTerms?: string
+  badge?: BadgeStyle
+  invertIcon?: boolean
+}
 
 /** Normalized http(s) URL for deduplication (trailing slash on path, full origin/search/hash). */
 export function canonicalPinUrl(url: string): string | null {
@@ -43,7 +50,8 @@ function displayLabelFallback(url: string): string {
 export function appendStandalonePin(
   prev: AppState,
   url: string,
-  label: string
+  label: string,
+  details?: StandalonePinDetails
 ): { next: AppState } | "duplicate" | "invalid" {
   const trimmedUrl = url.trim()
   const canonical = canonicalPinUrl(trimmedUrl)
@@ -51,11 +59,22 @@ export function appendStandalonePin(
   if (isPinnedUrlCanonical(prev, canonical)) return "duplicate"
 
   const displayLabel = label.trim() || displayLabelFallback(trimmedUrl)
+  const searchTerms = details?.searchTerms?.trim() || undefined
+  const badge =
+    details?.badge && details.badge.emoji.trim().length > 0
+      ? {
+          emoji: details.badge.emoji.slice(0, 2),
+          color: details.badge.color,
+        }
+      : undefined
   const idx = prev.standaloneLinks.length
   const newLink: Link = {
-    id: crypto.randomUUID(),
+    id: details?.id?.trim() || crypto.randomUUID(),
     url: trimmedUrl,
     label: displayLabel,
+    ...(searchTerms ? { searchTerms } : {}),
+    ...(badge ? { badge } : {}),
+    ...(details?.invertIcon ? { invertIcon: true } : {}),
   }
   return {
     next: {

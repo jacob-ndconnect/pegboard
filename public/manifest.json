@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "PegBoard",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "description": "Personal new tab launcher with sections, badges, and search",
   "chrome_url_overrides": {
     "newtab": "index.html"
@@ -16,6 +16,10 @@
   ],
   "host_permissions": ["<all_urls>"],
   "omnibox": { "keyword": "pb" },
+  "action": {
+    "default_title": "Add to PegBoard",
+    "default_popup": "popup.html"
+  },
   "background": {
     "service_worker": "background.js"
   },

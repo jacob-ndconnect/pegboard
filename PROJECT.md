@@ -12,7 +12,8 @@ A Chrome extension that replaces the default new tab page with a customizable co
 - **@tanstack/react-hotkeys** for shortcuts (Mod+K style)
 - **Chrome Extension** (Manifest V3) — `chrome_url_overrides.newtab`
 - **chrome.storage.sync** for `AppState`; **chrome.storage.local** for canvas scroll anchor (optional mirror to sync) and what's-new ack (`whatsNewSeenId`, integer matching [`src/content/whats-new.md`](./src/content/whats-new.md) frontmatter `id` — not manifest version)
-- **Service worker** (`background.ts` → `background.js`) for omnibox
+- **Service worker** (`background.ts` → `background.js`) for omnibox and context-menu pin
+- **Toolbar popup** (`popup.html` → `src/popup/`) — action click menu to add the current page as a shortcut or cutout
 
 ---
 
@@ -114,6 +115,7 @@ Root component. Responsibilities:
 - **Manifest:** `"omnibox": { "keyword": "pb" }` — changing the keyword requires editing the manifest / repacking the extension; Settings shows an **info** row explaining Chrome’s “Manage search engines” flow
 - **Icons:** `public/icons/icon{16,32,48,128}.png` (the B mark). The new-tab tab favicon is separate (`index.html` → `favicon.svg` / `favicon.ico`). Context menus use the 16×16 in color. The omnibox keyword chip (gray icon next to the name after typing `pb`) is owned by Chrome — there is no `chrome.omnibox` icon API. Chrome loads that bitmap once via its omnibox icon manager / search-engine entry; **Reload on `chrome://extensions` often keeps the old chip.** To refresh it: Remove the unpacked extension, Load unpacked again (loads from `dist/` after `npm run build`), then fully quit Chrome. Optional: `chrome://settings/searchEngines` and confirm the PegBoard/`pb` engine isn’t a leftover with a stale favicon.
 - **Behavior:** On input, reads `chrome.storage.sync` under the same `appState` key as the new tab page, filters links by label / domain / `searchTerms`, suggests matches; Enter navigates current or new tab based on disposition
+- **Toolbar action:** `action.default_popup` is `popup.html`. It reads the active tab (host permission covers the URL) and offers **Add shortcut** (same fields as [`LinkEditor`](./src/components/editor/LinkEditor.tsx), written with [`appendStandalonePin`](./src/lib/appendStandalonePin.ts)) or **Add cutout** (opens `index.html?cutout=…` in a new tab). The new tab opens Add Cutout with that URL via [`readToolbarCutoutIntent`](./src/lib/toolbarCutout.ts) and switches to canvas when the cutout is saved.
 - **Types:** Background uses a minimal `AppState` shape (sections + links); keep in sync when adding top-level fields the omnibox should ignore or use
 
 ---
@@ -305,7 +307,8 @@ Theme context (dark/light/system), localStorage persistence, system preference l
 src/
 ├── App.tsx                 # Root, layout, dialogs, hotkeys
 ├── main.tsx
-├── background.ts           # Omnibox → storage (built to background.js)
+├── background.ts           # Omnibox + context menu (built to background.js)
+├── popup/                  # Toolbar action popup (popup.html)
 ├── index.css
 ├── types/index.ts
 ├── hooks/
