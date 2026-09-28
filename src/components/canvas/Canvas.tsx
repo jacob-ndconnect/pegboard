@@ -33,6 +33,11 @@ type CanvasProps = {
   state: AppState
   save: (newStateOrUpdater: AppState | ((prev: AppState) => AppState)) => void
   onEditSection: (section: Section) => void
+  /** Section whose name and color are being edited on the canvas. */
+  editingSectionId?: string | null
+  onSectionNameChange?: (sectionId: string, name: string) => void
+  onSectionAccentChange?: (sectionId: string, accentColor: string) => void
+  onExitSectionEdit?: () => void
   onEditLink: (sectionId: string, linkId: string) => void
   onAddLink: (sectionId: string) => void
   onEditStandaloneLink: (linkId: string) => void
@@ -86,6 +91,10 @@ export function Canvas({
   state,
   save,
   onEditSection,
+  editingSectionId = null,
+  onSectionNameChange,
+  onSectionAccentChange,
+  onExitSectionEdit,
   onEditLink,
   onAddLink,
   onEditStandaloneLink,
@@ -270,6 +279,15 @@ export function Canvas({
                 isDraggable={!DRAGGABLE_ONLY_IN_EDIT || editMode}
                 sectionLabelSize={settings.sectionLabelSize}
                 onEditSection={() => onEditSection(section)}
+                labelEditing={editingSectionId === section.id}
+                muted={
+                  editingSectionId != null && editingSectionId !== section.id
+                }
+                onRename={(name) => onSectionNameChange?.(section.id, name)}
+                onAccentColorChange={(accentColor) =>
+                  onSectionAccentChange?.(section.id, accentColor)
+                }
+                onExitLabelEditing={onExitSectionEdit}
                 onEditLink={(linkId) => onEditLink(section.id, linkId)}
                 onAddLink={() => onAddLink(section.id)}
                 onCanvasColumnSpanChange={(span) => {
@@ -291,7 +309,11 @@ export function Canvas({
                 key={entry.link.id}
                 entry={entry}
                 editMode={editMode}
-                isDraggable={!DRAGGABLE_ONLY_IN_EDIT || editMode}
+                isDraggable={
+                  (!DRAGGABLE_ONLY_IN_EDIT || editMode) &&
+                  editingSectionId == null
+                }
+                muted={editingSectionId != null}
                 onEdit={() => onEditStandaloneLink(entry.link.id)}
                 onTransformChange={handleTransformChange}
               />
@@ -302,7 +324,11 @@ export function Canvas({
                 page={page}
                 editMode={editMode}
                 sectionLabelSize={settings.sectionLabelSize}
-                isDraggable={!DRAGGABLE_ONLY_IN_EDIT || editMode}
+                muted={editingSectionId != null}
+                isDraggable={
+                  (!DRAGGABLE_ONLY_IN_EDIT || editMode) &&
+                  editingSectionId == null
+                }
                 onEdit={(rect) => onEditCroppedPage(page.id, rect)}
                 onExpand={(rect) => onExpandCroppedPage(page.id, rect)}
                 onTransformChange={handleTransformChange}

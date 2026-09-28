@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button"
 import { ColorPickerPopover } from "@/components/ui/color-picker"
 import { COLOR_SWATCHES } from "@/lib/color-swatches"
 import { useReadableAccent } from "@/hooks/useReadableAccent"
-import { getContrastColor } from "@/lib/color"
+import { editingLabelStyle, getContrastColor } from "@/lib/color"
 import { getFaviconFallbackUrl, getFaviconUrl } from "@/lib/favicon"
 import {
   clampCropToFrame,
@@ -469,10 +469,7 @@ export function CroppedPageCaptureOverlay({
           <div className="flex min-w-0 items-center gap-2">
             <label
               className="flex min-w-0 items-center gap-1.5 px-2 py-1 font-geist-pixel text-lg"
-              style={{
-                backgroundColor: accentColor,
-                color: accentInk,
-              }}
+              style={editingLabelStyle(accentColor)}
             >
               <img
                 src={
@@ -488,7 +485,7 @@ export function CroppedPageCaptureOverlay({
                 value={label}
                 onChange={(e) => setLabel(e.target.value)}
                 aria-label="Cutout label"
-                className="w-40 min-w-0 bg-transparent outline-none placeholder:text-current/60"
+                className="w-40 min-w-0 bg-transparent text-white outline-none placeholder:text-white/60"
                 placeholder="Label"
               />
             </label>

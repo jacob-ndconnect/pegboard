@@ -46,6 +46,9 @@ export function App() {
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [sectionEditorOpen, setSectionEditorOpen] = useState(false)
   const [sectionToEdit, setSectionToEdit] = useState<Section | null>(null)
+  const [canvasSectionEditId, setCanvasSectionEditId] = useState<string | null>(
+    null
+  )
   const [linkEditorOpen, setLinkEditorOpen] = useState(false)
   const [linkToEdit, setLinkToEdit] = useState<Link | null>(null)
   const [linkEditorScope, setLinkEditorScope] = useState<LinkEditorScope>(null)
@@ -101,16 +104,18 @@ export function App() {
   const themeShortcut = state.settings.themeShortcut
   useHotkey(
     searchShortcut as RegisterableHotkey,
-    useCallback(() => setCommandOpen((prev) => !prev), [])
+    useCallback(() => setCommandOpen((prev) => !prev), []),
+    { enabled: canvasSectionEditId == null }
   )
   useHotkey(
     settingsShortcut as RegisterableHotkey,
-    useCallback(() => setSettingsOpen(true), [])
+    useCallback(() => setSettingsOpen(true), []),
+    { enabled: canvasSectionEditId == null }
   )
   useHotkey(
     (themeShortcut || "d") as RegisterableHotkey,
     toggleLightDark,
-    { enabled: themeShortcut.length > 0 }
+    { enabled: themeShortcut.length > 0 && canvasSectionEditId == null }
   )
 
   const handleEscape = useCallback(() => {
@@ -123,6 +128,8 @@ export function App() {
       setSettingsOpen(false)
     } else if (commandOpen) {
       setCommandOpen(false)
+    } else if (canvasSectionEditId) {
+      setCanvasSectionEditId(null)
     } else if (sectionEditorOpen) {
       setSectionEditorOpen(false)
     } else if (linkEditorOpen) {
@@ -143,6 +150,7 @@ export function App() {
     markWhatsNewSeen,
     settingsOpen,
     commandOpen,
+    canvasSectionEditId,
     sectionEditorOpen,
     linkEditorOpen,
     expandedCroppedPageId,
@@ -159,10 +167,32 @@ export function App() {
     setSectionEditorOpen(true)
   }
 
-  const openEditSection = useCallback((section: Section) => {
-    setSectionToEdit(section)
-    setSectionEditorOpen(true)
-  }, [])
+  const openEditSection = useCallback(
+    (section: Section) => {
+      if (state.layoutMode === "canvas") {
+        setCanvasSectionEditId(section.id)
+        return
+      }
+      setSectionToEdit(section)
+      setSectionEditorOpen(true)
+    },
+    [state.layoutMode]
+  )
+
+  const patchSection = useCallback(
+    (
+      sectionId: string,
+      patch: Partial<Pick<Section, "name" | "accentColor">>
+    ) => {
+      save((prev) => ({
+        ...prev,
+        sections: prev.sections.map((s) =>
+          s.id === sectionId ? { ...s, ...patch } : s
+        ),
+      }))
+    },
+    [save]
+  )
 
   const openEditLink = useCallback(
     (sectionId: string, linkId: string) => {
@@ -419,6 +449,14 @@ export function App() {
                 state={state}
                 save={save}
                 onEditSection={openEditSection}
+                editingSectionId={canvasSectionEditId}
+                onSectionNameChange={(sectionId, name) =>
+                  patchSection(sectionId, { name })
+                }
+                onSectionAccentChange={(sectionId, accentColor) =>
+                  patchSection(sectionId, { accentColor })
+                }
+                onExitSectionEdit={() => setCanvasSectionEditId(null)}
                 onEditLink={openEditLink}
                 onAddLink={openAddLink}
                 onEditStandaloneLink={openEditStandaloneLink}
@@ -472,6 +510,7 @@ export function App() {
         showWhatsNew={showWhatsNewChip && !isEmpty}
         onWhatsNewClick={() => setWhatsNewOpen(true)}
         onDismissWhatsNew={markWhatsNewSeen}
+        suspended={canvasSectionEditId != null}
       />
       <OnboardingModal
         open={onboardingOpen}
@@ -512,7 +551,11 @@ export function App() {
         onContinue={handleCroppedPageContinue}
       />
       {state.croppedPages.map((page) => (
-        <CroppedPageMirror key={page.id} page={page} />
+        <CroppedPageMirror
+          key={page.id}
+          page={page}
+          dimmed={canvasSectionEditId != null}
+        />
       ))}
       {captureSession ? (
         <CroppedPageCaptureOverlay

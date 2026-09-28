@@ -13,6 +13,8 @@ type FloatingCroppedPageCardProps = {
   isDraggable: boolean
   sectionLabelSize?: SectionLabelSize
   onEdit: (originRect: DOMRect) => void
+  /** Faded and non-interactive while a section label is being edited. */
+  muted?: boolean
   onExpand: (originRect: DOMRect) => void
   onTransformChange?: (
     pageId: string,
@@ -26,6 +28,7 @@ export function FloatingCroppedPageCard({
   isDraggable,
   sectionLabelSize = "text-lg",
   onEdit,
+  muted = false,
   onExpand,
   onTransformChange,
 }: FloatingCroppedPageCardProps) {
@@ -67,10 +70,12 @@ export function FloatingCroppedPageCard({
         outlineOffset: "-1px",
         ...style,
       }}
+      inert={muted ? true : undefined}
       onMouseEnter={() => setIsCardHovered(true)}
       onMouseLeave={() => setIsCardHovered(false)}
       className={cn(
         "group relative z-1 flex min-w-0 shrink-0 flex-col gap-0 p-0 shadow-sm",
+        muted && "pointer-events-none opacity-20",
         editMode && "outline-outline outline",
         isDraggable && !isDragging && "hover:bg-white/5 hover:backdrop-blur-sm",
         isDragging && "z-50 bg-white/10 shadow-lg backdrop-blur-sm"

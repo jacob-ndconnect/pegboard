@@ -204,15 +204,17 @@ Fixed toolbar (top: add menu, edit toggle, search affordance with shortcut chips
 - **Edit** — toggles `editMode` (uses `save({ ...state, … })` for this path)
 - **Canvas / List** — switches `layoutMode`
 - **Add Section** — opens `SectionEditor` with `section: null`
+- **Edit section (canvas)** — inline on the section: name field and accent `ColorPickerPopover`. The pencil becomes a Save button (icon and label). Other sections, shortcuts, cutout iframes, and the toolbar stay visible at 20% opacity and ignore pointer input. The section itself stays in the normal edit-mode chrome (drag handle, outline, links, resize); only its header changes. Escape, Enter, or Save leaves the field. Name and color save as you edit. List and folder layouts still use `SectionEditor` (including delete).
 - **Reset positions** — re-grids Canvas sections when layout is canvas and positions were customized
 
 #### `src/components/editor/SectionEditor.tsx`
 
-Dialog for create/edit section.
+Dialog for creating a section, and for editing one in list or folder layout.
 
 - **Fields:** Name, accent color (`ColorPickerPopover` from `src/components/ui/color-picker.tsx`, `COLOR_SWATCHES`)
 - **Creates:** New section with `crypto.randomUUID()`, default position `{x:40, y:40}`
 - **Delete:** When editing an existing section, destructive footer action removes it from `sections` (same pattern as `LinkEditor`)
+- **Canvas:** editing an existing section does not open this dialog. `SectionFrame` renames in place and opens the same color picker in a popover. The edit control switches to a Save icon with a “Save” label. While that is active, other sections, shortcuts, toolbar chrome, and cutout iframes (`CroppedPageMirror`) render at 20% opacity with `pointer-events: none` (`inert` on the toolbar). The section being edited keeps normal edit-mode chrome; only the header is replaced. Escape, Enter, or Save exits. The editing label uses the page background, white text, and the accent as an inner border — the cutout editor label uses that same treatment.
 
 #### `src/components/editor/LinkEditor.tsx`
 

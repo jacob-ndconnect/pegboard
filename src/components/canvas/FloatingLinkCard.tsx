@@ -11,6 +11,8 @@ type FloatingLinkCardProps = {
   editMode: boolean
   isDraggable: boolean
   onEdit: () => void
+  /** Faded and non-interactive while a section label is being edited. */
+  muted?: boolean
   onTransformChange?: (
     linkId: string,
     transform: { x: number; y: number } | null
@@ -22,6 +24,7 @@ export function FloatingLinkCard({
   editMode,
   isDraggable,
   onEdit,
+  muted = false,
   onTransformChange,
 }: FloatingLinkCardProps) {
   const { link, position } = entry
@@ -113,10 +116,12 @@ export function FloatingLinkCard({
         ...style,
       }}
       {...(isDraggable ? { ...attributes, ...listeners } : {})}
+      inert={muted ? true : undefined}
       onMouseEnter={() => setIsCardHovered(true)}
       onMouseLeave={() => setIsCardHovered(false)}
       className={cn(
         "group relative flex w-fit flex-col items-center rounded-none p-0",
+        muted && "pointer-events-none opacity-20",
         isDraggable && "backdrop-blur-sm",
         isDraggable && (isDragging ? "cursor-grabbing" : "cursor-grab"),
         isDraggable && !isDragging && "hover:bg-white/5 hover:backdrop-blur-sm",

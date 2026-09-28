@@ -71,6 +71,8 @@ type EditModeToolbarProps = {
   showWhatsNew?: boolean
   onWhatsNewClick?: () => void
   onDismissWhatsNew?: () => void
+  /** Canvas section rename: chrome stays visible, but faded and inert. */
+  suspended?: boolean
 }
 
 export function EditModeToolbar({
@@ -86,6 +88,7 @@ export function EditModeToolbar({
   showWhatsNew = false,
   onWhatsNewClick,
   onDismissWhatsNew,
+  suspended = false,
 }: EditModeToolbarProps) {
   const { editMode, layoutMode } = state
   const [addMenuOpen, setAddMenuOpen] = useState(false)
@@ -103,7 +106,10 @@ export function EditModeToolbar({
   }
 
   return (
-    <>
+    <div
+      className={cn(suspended && "pointer-events-none opacity-20")}
+      inert={suspended ? true : undefined}
+    >
       <GradualBlurMemo
         className="top-0 right-0 left-0"
         position="top"
@@ -369,6 +375,6 @@ export function EditModeToolbar({
           </div>
         </>
       )}
-    </>
+    </div>
   )
 }

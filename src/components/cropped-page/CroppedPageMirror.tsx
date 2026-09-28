@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react"
+import { cn } from "@/lib/utils"
 import { createPortal } from "react-dom"
 import { croppedPageRevealShift } from "@/lib/croppedPage"
 import type { CroppedPage } from "@/types"
@@ -11,6 +12,8 @@ import {
 
 type CroppedPageMirrorProps = {
   page: CroppedPage
+  /** Canvas section rename: the mirrored iframe fades with the rest of the board. */
+  dimmed?: boolean
 }
 
 function pageShift(
@@ -46,7 +49,10 @@ function applyBox(
   inner.style.transform = `translate3d(${shift.x}px, ${shift.y}px, 0)`
 }
 
-export function CroppedPageMirror({ page }: CroppedPageMirrorProps) {
+export function CroppedPageMirror({
+  page,
+  dimmed = false,
+}: CroppedPageMirrorProps) {
   const boxRef = useRef<HTMLDivElement | null>(null)
   const innerRef = useRef<HTMLDivElement | null>(null)
   const pageRef = useRef(page)
@@ -86,7 +92,10 @@ export function CroppedPageMirror({ page }: CroppedPageMirrorProps) {
   return createPortal(
     <div
       ref={boxRef}
-      className="pointer-events-none fixed overflow-hidden"
+      className={cn(
+        "pointer-events-none fixed overflow-hidden",
+        dimmed && "opacity-20"
+      )}
       style={{ visibility: "hidden" }}
     >
       <div ref={innerRef} className="absolute">

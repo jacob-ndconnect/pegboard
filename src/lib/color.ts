@@ -2,6 +2,19 @@
 export const OFF_WHITE = "oklch(0.985 0.001 106.423)"
 export const OFF_BLACK = "oklch(0.147 0.004 49.25)"
 
+/** Inline rename: page surface fill, white text, accent as an inner border. */
+export function editingLabelStyle(accentColor: string): {
+  backgroundColor: string
+  color: string
+  boxShadow: string
+} {
+  return {
+    backgroundColor: "var(--background)",
+    color: "#fff",
+    boxShadow: `inset 0 0 0 1px ${accentColor}`,
+  }
+}
+
 /** WCAG AA for normal text. Icons next to labels share the same bar. */
 const MIN_CONTRAST = 4.5
 

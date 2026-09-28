@@ -7,7 +7,9 @@ import { dropSectionDroppableId } from "@/components/dnd/linkDragIds"
 import { isActiveLinkDrag } from "@/components/dnd/isActiveLinkDrag"
 import { SectionLinkDraggable } from "@/components/dnd/SectionLinkDraggable"
 import { LinkCard } from "./LinkCard"
-import { getContrastColor } from "@/lib/color"
+import { ColorPickerPopover } from "@/components/ui/color-picker"
+import { editingLabelStyle, getContrastColor } from "@/lib/color"
+import { COLOR_SWATCHES } from "@/lib/color-swatches"
 import { useReadableAccent } from "@/hooks/useReadableAccent"
 import {
   canvasColumnSpanFromTargetWidth,
@@ -23,7 +25,11 @@ import {
 import { sectionResizeDebugLog } from "@/lib/extensionDebugLog"
 import { cn } from "@/lib/utils"
 import type { Section, SectionLabelSize } from "@/types"
-import { PencilSimpleIcon } from "@phosphor-icons/react/dist/ssr"
+import {
+  FloppyDiskIcon,
+  PaletteIcon,
+  PencilSimpleIcon,
+} from "@phosphor-icons/react/dist/ssr"
 
 type SectionFrameProps = {
   section: Section
@@ -31,6 +37,13 @@ type SectionFrameProps = {
   isDraggable: boolean
   sectionLabelSize?: SectionLabelSize
   onEditSection: () => void
+  /** Canvas inline rename. Other canvas items are dimmed by the parent. */
+  labelEditing?: boolean
+  onRename?: (name: string) => void
+  onAccentColorChange?: (accentColor: string) => void
+  onExitLabelEditing?: () => void
+  /** Faded and non-interactive while another section is being renamed. */
+  muted?: boolean
   onEditLink: (linkId: string) => void
   onAddLink?: () => void
   /** Snap-to-grid horizontal resize (canvas column count), edit mode only. */
@@ -50,6 +63,11 @@ export function SectionFrame({
   isDraggable,
   sectionLabelSize = "text-lg",
   onEditSection,
+  labelEditing = false,
+  onRename,
+  onAccentColorChange,
+  onExitLabelEditing,
+  muted = false,
   onEditLink,
   onAddLink,
   onCanvasColumnSpanChange,
@@ -110,6 +128,7 @@ export function SectionFrame({
   const linkDropTargetActive =
     isDropOverLinks && isActiveLinkDrag(dropContextActive)
 
+  const sectionEditMode = editMode || labelEditing
   const readableAccent = useReadableAccent(section.accentColor)
   const sectionAccentActionStyle = {
     "--section-accent": section.accentColor,
@@ -124,6 +143,44 @@ export function SectionFrame({
     : undefined
 
   const [isCardHovered, setIsCardHovered] = useState(false)
+  const [editingName, setEditingName] = useState(section.name)
+  const editingNameRef = useRef(section.name)
+  const sectionNameRef = useRef(section.name)
+  const onRenameRef = useRef(onRename)
+  const nameInputRef = useRef<HTMLInputElement>(null)
+  sectionNameRef.current = section.name
+  onRenameRef.current = onRename
+  editingNameRef.current = editingName
+
+  useEffect(() => {
+    if (!labelEditing) return
+    setEditingName(sectionNameRef.current)
+    editingNameRef.current = sectionNameRef.current
+    const frame = requestAnimationFrame(() => {
+      nameInputRef.current?.focus()
+      nameInputRef.current?.select()
+    })
+    return () => cancelAnimationFrame(frame)
+  }, [labelEditing])
+
+  useEffect(() => {
+    if (!labelEditing) return
+    const timeout = window.setTimeout(() => {
+      const trimmed = editingNameRef.current.trim()
+      if (!trimmed || trimmed === sectionNameRef.current) return
+      onRenameRef.current?.(trimmed)
+    }, 200)
+    return () => window.clearTimeout(timeout)
+  }, [editingName, labelEditing])
+
+  useEffect(() => {
+    if (!labelEditing) return
+    return () => {
+      const trimmed = editingNameRef.current.trim()
+      if (!trimmed || trimmed === sectionNameRef.current) return
+      onRenameRef.current?.(trimmed)
+    }
+  }, [labelEditing])
 
   useEffect(() => {
     onTransformChange?.(section.id, transform ?? null)
@@ -170,9 +227,12 @@ export function SectionFrame({
       }}
       onMouseEnter={() => setIsCardHovered(true)}
       onMouseLeave={() => setIsCardHovered(false)}
+      inert={muted ? true : undefined}
       className={cn(
         "group relative z-1 flex min-w-0 shrink-0 flex-col gap-0 p-0 shadow-sm",
-        editMode && "outline-outline outline",
+        labelEditing && "z-20",
+        muted && "pointer-events-none opacity-20",
+        sectionEditMode && "outline-outline outline",
         isDraggable && !isDragging && "hover:bg-white/5 hover:backdrop-blur-sm",
         isDraggable && isDragging && "cursor-grabbing",
         isDragging && "z-50 bg-white/10 shadow-lg backdrop-blur-sm"
@@ -185,8 +245,8 @@ export function SectionFrame({
             "absolute -top-[3px] left-1/2 z-5 z-10 flex -translate-x-1/2 cursor-grab flex-col items-center gap-0.5 transition-opacity",
             "backdrop-blur-sm before:absolute before:top-1/2 before:left-1/2 before:z-1 before:h-4 before:w-7 before:-translate-x-1/2 before:-translate-y-1/2 before:bg-background/80 before:content-['']",
             isDragging && "cursor-grabbing",
-            !editMode && !isCardHovered && "opacity-0",
-            !editMode && isCardHovered && "opacity-100"
+            !sectionEditMode && !isCardHovered && "opacity-0",
+            !sectionEditMode && isCardHovered && "opacity-100"
           )}
           aria-label="Drag section"
         >
@@ -199,24 +259,82 @@ export function SectionFrame({
           ))}
         </div>
       )}
-      <div className="group flex min-w-0 items-center justify-between gap-2 pb-0">
-        <h3
+      <div
+        className={cn(
+          "group flex min-w-0 items-center justify-between pb-0",
+          !labelEditing && "gap-2"
+        )}
+      >
+        {labelEditing ? (
+          <div className="flex min-w-0 items-center">
+            <label
+              className={cn(
+                "flex max-w-full min-w-0 items-center px-2 py-1 font-geist-pixel",
+                sectionLabelSize
+              )}
+              style={{
+                ...editingLabelStyle(section.accentColor),
+                fontVariationSettings:
+                  "var(--geist-pixel-variation-settings, normal)",
+                fontFeatureSettings:
+                  "var(--geist-pixel-feature-settings, normal)",
+              }}
+            >
+              <input
+                ref={nameInputRef}
+                value={editingName}
+                aria-label="Section name"
+                placeholder="Section name"
+                onChange={(e) => setEditingName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key !== "Enter") return
+                  e.preventDefault()
+                  onExitLabelEditing?.()
+                }}
+                onPointerDown={(e) => e.stopPropagation()}
+                className="field-sizing-content min-w-[4ch] max-w-[70vw] bg-transparent text-white outline-none placeholder:text-white/60"
+              />
+            </label>
+            <ColorPickerPopover
+              value={section.accentColor}
+              onValueChange={(_, parsed) => onAccentColorChange?.(parsed.hex)}
+              swatches={[...COLOR_SWATCHES]}
+              hideEyedropper
+              panelZIndex={260}
+              triggerClassName="size-8 justify-center border-0 bg-transparent p-0 hover:bg-white/10"
+              trigger={
+                <PaletteIcon
+                  className="size-5"
+                  style={{ color: readableAccent }}
+                />
+              }
+            />
+          </div>
+        ) : (
+          <h3
+            className={cn(
+              "max-w-full min-w-0 truncate px-2 py-1 font-geist-pixel",
+              sectionLabelSize
+            )}
+            style={{
+              backgroundColor: section.accentColor,
+              color: getContrastColor(section.accentColor),
+              fontVariationSettings:
+                "var(--geist-pixel-variation-settings, normal)",
+              fontFeatureSettings:
+                "var(--geist-pixel-feature-settings, normal)",
+            }}
+          >
+            {section.name}
+          </h3>
+        )}
+        <div
           className={cn(
-            "max-w-full min-w-0 truncate px-2 py-1 font-geist-pixel",
-            sectionLabelSize
+            "flex shrink-0 items-center",
+            !labelEditing && "gap-0.5"
           )}
-          style={{
-            backgroundColor: section.accentColor,
-            color: getContrastColor(section.accentColor),
-            fontVariationSettings:
-              "var(--geist-pixel-variation-settings, normal)",
-            fontFeatureSettings: "var(--geist-pixel-feature-settings, normal)",
-          }}
         >
-          {section.name}
-        </h3>
-        <div className="flex shrink-0 items-center gap-0.5">
-          {onAddLink && (
+          {onAddLink && !labelEditing && (
             <button
               type="button"
               style={sectionAccentActionStyle}
@@ -226,7 +344,7 @@ export function SectionFrame({
               }}
               className={cn(
                 "group/icon-action cursor-pointer rounded-none p-1.5 transition-colors hover:bg-[var(--section-accent)]",
-                !editMode &&
+                !sectionEditMode &&
                   "opacity-0 transition-opacity group-hover:opacity-100"
               )}
               aria-label="Add link"
@@ -242,19 +360,30 @@ export function SectionFrame({
             style={sectionAccentActionStyle}
             onClick={(e) => {
               e.stopPropagation()
-              onEditSection()
+              if (labelEditing) onExitLabelEditing?.()
+              else onEditSection()
             }}
             className={cn(
-              "group/icon-action cursor-pointer rounded-none p-1.5 transition-colors hover:bg-[var(--section-accent)]",
-              !editMode &&
+              "group/icon-action flex cursor-pointer items-center rounded-none p-1.5 transition-colors",
+              labelEditing
+                ? "gap-1.5 bg-[var(--section-accent)] text-[var(--section-accent-contrast)] hover:brightness-110"
+                : "hover:bg-[var(--section-accent)]",
+              !sectionEditMode &&
                 "opacity-0 transition-opacity group-hover:opacity-100"
             )}
-            aria-label="Edit section"
+            aria-label={labelEditing ? "Save section" : "Edit section"}
           >
-            <PencilSimpleIcon
-              className="size-5 text-[var(--section-accent-readable)] transition-colors group-hover/icon-action:text-[var(--section-accent-contrast)]"
-              aria-hidden
-            />
+            {labelEditing ? (
+              <>
+                <FloppyDiskIcon className="size-5" aria-hidden />
+                <span className="text-sm">Save</span>
+              </>
+            ) : (
+              <PencilSimpleIcon
+                className="size-5 text-[var(--section-accent-readable)] transition-colors group-hover/icon-action:text-[var(--section-accent-contrast)]"
+                aria-hidden
+              />
+            )}
           </button>
         </div>
       </div>
@@ -277,17 +406,17 @@ export function SectionFrame({
             sectionId={section.id}
             linkId={link.id}
             link={link}
-            editMode={editMode}
+            editMode={sectionEditMode}
           >
             <LinkCard
               link={link}
-              editMode={editMode}
+              editMode={sectionEditMode}
               onEdit={() => onEditLink(link.id)}
               accentColor={section.accentColor}
             />
           </SectionLinkDraggable>
         ))}
-        {editMode && onCanvasColumnSpanChange && (
+        {sectionEditMode && onCanvasColumnSpanChange && (
           <button
             type="button"
             aria-label="Resize section width"
