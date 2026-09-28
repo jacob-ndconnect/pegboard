@@ -1,11 +1,18 @@
+import { useState } from "react"
 import {
   FoldersIcon,
   PencilIcon,
+  PlusIcon,
   SquaresFourIcon,
   ListIcon,
 } from "@phosphor-icons/react"
 import type { Icon as PhosphorIcon } from "@phosphor-icons/react"
 import { Button } from "@/components/ui/button"
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
 import { Tabs, TabsList, TabItem } from "@/components/ui/tabs-proximity"
 import type { IconComponent } from "@/lib/icon-context"
 import { cn } from "@/lib/utils"
@@ -81,6 +88,7 @@ export function EditModeToolbar({
   onDismissWhatsNew,
 }: EditModeToolbarProps) {
   const { editMode, layoutMode } = state
+  const [addMenuOpen, setAddMenuOpen] = useState(false)
   const isBoardEmpty =
     state.sections.length === 0 &&
     state.standaloneLinks.length === 0 &&
@@ -194,6 +202,63 @@ export function EditModeToolbar({
 
         <div className="flex justify-end">
           <div className="flex items-center gap-1">
+            <Popover open={addMenuOpen} onOpenChange={setAddMenuOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  className="cursor-pointer rounded-none"
+                  aria-label="Add"
+                >
+                  <PlusIcon className="size-4" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent
+                align="end"
+                side="bottom"
+                sideOffset={8}
+                className="w-44 gap-0.5 rounded-none border border-border bg-background/95 p-1 shadow-sm backdrop-blur"
+              >
+                {layoutMode === "canvas" && onAddCroppedPage ? (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="w-full cursor-pointer justify-start gap-2 rounded-none"
+                    onClick={() => {
+                      setAddMenuOpen(false)
+                      onAddCroppedPage()
+                    }}
+                  >
+                    <BrowserIcon className="size-4" />
+                    Add cutout
+                  </Button>
+                ) : null}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="w-full cursor-pointer justify-start gap-2 rounded-none"
+                  onClick={() => {
+                    setAddMenuOpen(false)
+                    onAddSection()
+                  }}
+                >
+                  <SelectionPlusIcon className="size-4" />
+                  {layoutMode === "folders" ? "Add folder" : "Add section"}
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="w-full cursor-pointer justify-start gap-2 rounded-none"
+                  onClick={() => {
+                    setAddMenuOpen(false)
+                    onAddStandaloneLink()
+                  }}
+                >
+                  <LinkSimpleIcon className="size-4" />
+                  Add shortcut
+                </Button>
+              </PopoverContent>
+            </Popover>
             <Button
               variant={editMode ? "outline" : "ghost"}
               size={editMode ? "sm" : "icon-sm"}

@@ -3,6 +3,7 @@ import { PencilSimpleIcon } from "@phosphor-icons/react"
 import { getFaviconFallbackUrl, getFaviconUrl } from "@/lib/favicon"
 import { cn } from "@/lib/utils"
 import type { Link, Section } from "@/types"
+import { useReadableAccent } from "@/hooks/useReadableAccent"
 import { getContrastColor } from "@/lib/color"
 
 type LinkCardProps = {
@@ -58,9 +59,11 @@ export function LinkCard({
 
   const accentColorToUse = accentColor || "#ffffff55"
 
+  const readableAccent = useReadableAccent(accentColorToUse)
   const sectionAccentActionStyle = {
     "--section-accent": accentColorToUse,
     "--section-accent-contrast": getContrastColor(accentColorToUse),
+    "--section-accent-readable": readableAccent,
   } as React.CSSProperties
 
   return (
@@ -90,7 +93,7 @@ export function LinkCard({
           aria-label="Edit link"
         >
           <PencilSimpleIcon
-            className="size-5 text-(--section-accent) transition-colors group-hover/icon-action:text-(--section-accent-contrast)"
+            className="size-5 text-(--section-accent-readable) transition-colors group-hover/icon-action:text-(--section-accent-contrast)"
             weight="bold"
           />
         </button>

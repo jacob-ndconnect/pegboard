@@ -2,6 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react
 import { Button } from "@/components/ui/button"
 import { ColorPickerPopover } from "@/components/ui/color-picker"
 import { COLOR_SWATCHES } from "@/lib/color-swatches"
+import { useReadableAccent } from "@/hooks/useReadableAccent"
 import { getContrastColor } from "@/lib/color"
 import { getFaviconFallbackUrl, getFaviconUrl } from "@/lib/favicon"
 import {
@@ -184,6 +185,8 @@ export function CroppedPageCaptureOverlay({
   )
   const [label, setLabel] = useState(session.label)
   const [accentColor, setAccentColor] = useState(session.accentColor)
+  const readableAccent = useReadableAccent(accentColor)
+  const accentInk = getContrastColor(accentColor)
   const [faviconError, setFaviconError] = useState(false)
   const [editorUrl, setEditorUrl] = useState(session.url)
   const [cropHidden, setCropHidden] = useState(false)
@@ -462,13 +465,13 @@ export function CroppedPageCaptureOverlay({
           finishClose()
         }}
       >
-        <div className="flex shrink-0 items-center justify-between gap-3 px-3 py-2">
+        <div className="flex shrink-0 items-end justify-between gap-3">
           <div className="flex min-w-0 items-center gap-2">
             <label
               className="flex min-w-0 items-center gap-1.5 px-2 py-1 font-geist-pixel text-lg"
               style={{
                 backgroundColor: accentColor,
-                color: getContrastColor(accentColor),
+                color: accentInk,
               }}
             >
               <img
@@ -497,7 +500,7 @@ export function CroppedPageCaptureOverlay({
               panelZIndex={260}
               triggerClassName="size-8 justify-center border-0 bg-transparent p-0 hover:bg-white/10"
               trigger={
-                <PaletteIcon className="size-5" style={{ color: accentColor }} />
+                <PaletteIcon className="size-5" style={{ color: readableAccent }} />
               }
             />
           </div>
@@ -506,7 +509,7 @@ export function CroppedPageCaptureOverlay({
               type="button"
               variant="ghost"
               className="h-8 gap-1.5 rounded-none px-2"
-              style={{ color: accentColor }}
+              style={{ color: readableAccent }}
               onClick={() => setCropHidden((hidden) => !hidden)}
             >
               <CropIcon className="size-4" />
@@ -527,7 +530,7 @@ export function CroppedPageCaptureOverlay({
               type="button"
               variant="ghost"
               className="h-8 rounded-none px-2"
-              style={{ color: accentColor }}
+              style={{ color: readableAccent }}
               onClick={() => requestClose("cancel")}
             >
               cancel
@@ -535,7 +538,7 @@ export function CroppedPageCaptureOverlay({
             <Button
               type="button"
               className="h-8 gap-1.5 rounded-none px-2.5"
-              style={{ backgroundColor: accentColor, color: "#000" }}
+              style={{ backgroundColor: accentColor, color: accentInk }}
               onClick={() => requestClose("save")}
             >
               save

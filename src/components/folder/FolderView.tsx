@@ -22,6 +22,7 @@ import {
   prefersFolderFlipReducedMotion,
   runFolderLinkEntranceFromTile,
 } from "@/lib/folderLinkFlip"
+import { useReadableAccent } from "@/hooks/useReadableAccent"
 import { getFaviconUrl } from "@/lib/favicon"
 import { cn } from "@/lib/utils"
 import { LinkDropTargetOverlay } from "@/components/dnd/LinkDropTargetOverlay"
@@ -99,6 +100,7 @@ function FolderTile({
     data: { kind: "section-drop" as const, sectionId: section.id },
   })
   const dropActive = isOver && isActiveLinkDrag(active)
+  const readableAccent = useReadableAccent(section.accentColor)
   const isUngrouped = section.id === UNGROUPED_SECTION_ID
   const previews = section.links.slice(0, 9)
 
@@ -126,7 +128,7 @@ function FolderTile({
         />
         <span
           className="truncate text-sm font-semibold"
-          style={{ color: section.accentColor }}
+          style={{ color: readableAccent }}
         >
           {section.name}
         </span>
@@ -165,6 +167,7 @@ function MoveToFolderChip({
     data: { kind: "section-drop" as const, sectionId: targetId },
   })
   const dropActive = isOver && isActiveLinkDrag(active)
+  const readableAccent = useReadableAccent(accentColor)
 
   return (
     <div
@@ -177,7 +180,7 @@ function MoveToFolderChip({
       />
       <span
         className="flex max-w-56 min-w-0 items-center gap-2 truncate text-sm font-medium"
-        style={{ color: accentColor }}
+        style={{ color: readableAccent }}
       >
         <span
           className="size-2 shrink-0 rounded-full"
@@ -291,6 +294,9 @@ export function FolderView({
       : openSectionId === UNGROUPED_SECTION_ID
         ? ungroupedSection
         : (sections.find((s) => s.id === openSectionId) ?? null)
+  const openSectionAccent = useReadableAccent(
+    openSection?.accentColor ?? "#000000"
+  )
 
   const moveTargets: { id: string; label: string; accent: string }[] = [
     ...(standaloneLinks.length > 0 || editMode
@@ -355,7 +361,7 @@ export function FolderView({
                     />
                     <h1
                       className="truncate text-lg font-semibold"
-                      style={{ color: openSection.accentColor }}
+                      style={{ color: openSectionAccent }}
                     >
                       {openSection.name}
                     </h1>

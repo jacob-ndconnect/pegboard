@@ -60,14 +60,17 @@ export function CroppedPageSetupDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md gap-0 p-0">
-        <DialogHeader className="border-b border-border px-4 py-3">
-          <DialogTitle>Add cutout</DialogTitle>
+      <DialogContent showCloseButton className="p-0">
+        <DialogHeader className="px-6 pt-6">
+          <DialogTitle>Add Cutout</DialogTitle>
         </DialogHeader>
-        <ScrollArea className="max-h-[min(70vh,28rem)]">
-          <div className="space-y-4 p-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium" htmlFor="cropped-page-url">
+        <ScrollArea className="max-h-[min(70dvh,calc(90dvh-10rem))]">
+          <div className="flex flex-col gap-4 px-6 py-2">
+            <div className="flex flex-col gap-2">
+              <label
+                htmlFor="cropped-page-url"
+                className="text-xs font-medium text-muted-foreground"
+              >
                 Url
               </label>
               <Input
@@ -76,10 +79,14 @@ export function CroppedPageSetupDialog({
                 onChange={(e) => setUrl(e.target.value)}
                 placeholder="https://example.com"
                 autoFocus
+                onKeyDown={(e) => e.key === "Enter" && handleContinue()}
               />
             </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium" htmlFor="cropped-page-label">
+            <div className="flex flex-col gap-2">
+              <label
+                htmlFor="cropped-page-label"
+                className="text-xs font-medium text-muted-foreground"
+              >
                 Label
               </label>
               <Input
@@ -87,10 +94,13 @@ export function CroppedPageSetupDialog({
                 value={label}
                 onChange={(e) => setLabel(e.target.value)}
                 placeholder="e.g. Deployments"
+                onKeyDown={(e) => e.key === "Enter" && handleContinue()}
               />
             </div>
-            <div className="space-y-2">
-              <span className="text-sm font-medium">Accent color</span>
+            <div className="flex flex-col gap-2">
+              <label className="text-xs font-medium text-muted-foreground">
+                Accent color
+              </label>
               <ColorPickerPopover
                 value={accentColor}
                 onValueChange={(_, parsed) => setAccentColor(parsed.hex)}
@@ -99,18 +109,17 @@ export function CroppedPageSetupDialog({
               />
             </div>
           </div>
+          <DialogFooter>
+            <Button
+              size="lg"
+              className="cursor-pointer rounded-full"
+              onClick={handleContinue}
+              disabled={!normalizeUrlInput(url)}
+            >
+              <FloppyDiskIcon /> Continue
+            </Button>
+          </DialogFooter>
         </ScrollArea>
-        <DialogFooter className="border-t border-border px-4 py-3">
-          <Button
-            type="button"
-            onClick={handleContinue}
-            className="gap-1.5"
-            disabled={!normalizeUrlInput(url)}
-          >
-            <FloppyDiskIcon className="size-4" />
-            Continue
-          </Button>
-        </DialogFooter>
       </DialogContent>
     </Dialog>
   )

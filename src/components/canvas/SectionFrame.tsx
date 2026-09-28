@@ -8,6 +8,7 @@ import { isActiveLinkDrag } from "@/components/dnd/isActiveLinkDrag"
 import { SectionLinkDraggable } from "@/components/dnd/SectionLinkDraggable"
 import { LinkCard } from "./LinkCard"
 import { getContrastColor } from "@/lib/color"
+import { useReadableAccent } from "@/hooks/useReadableAccent"
 import {
   canvasColumnSpanFromTargetWidth,
   effectiveCanvasColumnSpan,
@@ -109,9 +110,11 @@ export function SectionFrame({
   const linkDropTargetActive =
     isDropOverLinks && isActiveLinkDrag(dropContextActive)
 
+  const readableAccent = useReadableAccent(section.accentColor)
   const sectionAccentActionStyle = {
     "--section-accent": section.accentColor,
     "--section-accent-contrast": getContrastColor(section.accentColor),
+    "--section-accent-readable": readableAccent,
   } as React.CSSProperties
 
   const style = transform
@@ -229,7 +232,7 @@ export function SectionFrame({
               aria-label="Add link"
             >
               <PlusIcon
-                className="size-5 text-[var(--section-accent)] transition-colors group-hover/icon-action:text-[var(--section-accent-contrast)]"
+                className="size-5 text-[var(--section-accent-readable)] transition-colors group-hover/icon-action:text-[var(--section-accent-contrast)]"
                 aria-hidden
               />
             </button>
@@ -249,7 +252,7 @@ export function SectionFrame({
             aria-label="Edit section"
           >
             <PencilSimpleIcon
-              className="size-5 text-[var(--section-accent)] transition-colors group-hover/icon-action:text-[var(--section-accent-contrast)]"
+              className="size-5 text-[var(--section-accent-readable)] transition-colors group-hover/icon-action:text-[var(--section-accent-contrast)]"
               aria-hidden
             />
           </button>

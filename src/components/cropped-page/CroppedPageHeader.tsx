@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { useReadableAccent } from "@/hooks/useReadableAccent"
 import { getContrastColor } from "@/lib/color"
 import { getFaviconFallbackUrl, getFaviconUrl } from "@/lib/favicon"
 import { cn } from "@/lib/utils"
@@ -38,9 +39,11 @@ export function CroppedPageHeader({
 }: CroppedPageHeaderProps) {
   const [faviconError, setFaviconError] = useState(false)
   const faviconSrc = faviconError ? getFaviconFallbackUrl(url) : getFaviconUrl(url)
+  const readableAccent = useReadableAccent(accentColor)
   const actionStyle = {
     "--section-accent": accentColor,
     "--section-accent-contrast": getContrastColor(accentColor),
+    "--section-accent-readable": readableAccent,
   } as React.CSSProperties
   const hideUntilHover =
     revealActionsOnHover && !editMode
@@ -105,7 +108,7 @@ export function CroppedPageHeader({
             aria-label="Edit cutout"
           >
             <PencilSimpleIcon
-              className="size-5 text-[var(--section-accent)] transition-colors group-hover/icon-action:text-[var(--section-accent-contrast)]"
+              className="size-5 text-[var(--section-accent-readable)] transition-colors group-hover/icon-action:text-[var(--section-accent-contrast)]"
               aria-hidden
             />
           </button>
@@ -126,7 +129,7 @@ export function CroppedPageHeader({
             aria-label="Expand"
           >
             <ArrowsOutSimpleIcon
-              className="size-5 text-[var(--section-accent)] transition-colors group-hover/icon-action:text-[var(--section-accent-contrast)]"
+              className="size-5 text-[var(--section-accent-readable)] transition-colors group-hover/icon-action:text-[var(--section-accent-contrast)]"
               aria-hidden
             />
           </button>
@@ -144,7 +147,7 @@ export function CroppedPageHeader({
             aria-label="Close"
           >
             <ArrowsInSimpleIcon
-              className="size-5 text-[var(--section-accent)] transition-colors group-hover/icon-action:text-[var(--section-accent-contrast)]"
+              className="size-5 text-[var(--section-accent-readable)] transition-colors group-hover/icon-action:text-[var(--section-accent-contrast)]"
               aria-hidden
             />
           </button>

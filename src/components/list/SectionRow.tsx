@@ -6,6 +6,7 @@ import { dropSectionDroppableId } from "@/components/dnd/linkDragIds"
 import { isActiveLinkDrag } from "@/components/dnd/isActiveLinkDrag"
 import { SectionLinkDraggable } from "@/components/dnd/SectionLinkDraggable"
 import { StandaloneListLinkDraggable } from "@/components/dnd/StandaloneListLinkDraggable"
+import { useReadableAccent } from "@/hooks/useReadableAccent"
 import type { Section } from "@/types"
 import { UNGROUPED_SECTION_ID } from "@/types"
 
@@ -37,6 +38,7 @@ export function SectionRow({
     isDropOverLinks && isActiveLinkDrag(dropContextActive)
 
   const isUngrouped = section.id === UNGROUPED_SECTION_ID
+  const readableAccent = useReadableAccent(section.accentColor)
 
   return (
     <section className="border-b border-border/60 py-6 last:border-b-0">
@@ -48,7 +50,7 @@ export function SectionRow({
         />
         <h2
           className="text-sm font-semibold"
-          style={{ color: section.accentColor }}
+          style={{ color: readableAccent }}
         >
           {section.name}
         </h2>

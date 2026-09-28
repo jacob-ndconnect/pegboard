@@ -198,8 +198,9 @@ Dialog with vertical **Tabs**: Keyboard, Appearance, Sync, Data, Support.
 
 #### `src/components/editor/EditModeToolbar.tsx`
 
-Fixed toolbar (top: edit toggle, search affordance with shortcut chips, optional **See what's new** chip, settings gear, layout toggle; bottom in edit mode: add section, reset canvas positions when applicable).
+Fixed toolbar (top: add menu, edit toggle, search affordance with shortcut chips, optional **See what's new** chip, settings gear, layout toggle; bottom in edit mode: add section, reset canvas positions when applicable).
 
+- **Add** — `+` beside edit opens the same create actions as the bottom edit bar: cutout (canvas only), section (folder in folders layout), shortcut
 - **Edit** — toggles `editMode` (uses `save({ ...state, … })` for this path)
 - **Canvas / List** — switches `layoutMode`
 - **Add Section** — opens `SectionEditor` with `section: null`
@@ -255,7 +256,7 @@ Theme context (dark/light/system), localStorage persistence, system preference l
 | `src/lib/favicon.ts`            | `getFaviconUrl`, `getFaviconFallbackUrl`                                         | Favicon URLs for a link’s domain                          |
 | `src/lib/url.ts`                | `getDomain(url)`                                                                 | Hostname without `www.`                                   |
 | `src/lib/color-swatches.ts`     | `COLOR_SWATCHES`                                                                 | Preset hex colors for pickers                             |
-| `src/lib/color.ts`              | `getContrastColor`                                                               | Text color on colored section headers                     |
+| `src/lib/color.ts`              | `getContrastColor`, `ensureForegroundContrast`                                   | Off-white/off-black text on accent fills; lighten or darken unfilled accent ink so it clears the page background |
 | `src/lib/whatsNew.ts`           | `parseWhatsNewMarkdown`, `readWhatsNewSeenId`, `writeWhatsNewSeenId`, …          | Changelog frontmatter parse; local ack for what's-new chip |
 | `src/lib/whatsNewContent.ts`    | `WHATS_NEW_CONTENT`                                                              | Parsed [`src/content/whats-new.md`](./src/content/whats-new.md) at build time |
 | `src/lib/flags.ts`              | `FLAGS`                                                                          | Dev toggles (e.g. `alwaysShowWhatsNew`)                     |
