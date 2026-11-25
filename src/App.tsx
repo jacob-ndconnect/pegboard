@@ -46,7 +46,8 @@ type LinkEditorScope =
   | null
 
 export function App() {
-  const { state, save, loaded } = useStorage()
+  const { state, save, loaded, browserAccountSync, setBrowserAccountSync } =
+    useStorage()
   const [commandOpen, setCommandOpen] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [sectionEditorOpen, setSectionEditorOpen] = useState(false)
@@ -103,9 +104,7 @@ export function App() {
     let cancelled = false
     void readWhatsNewSeenId().then((seenId) => {
       if (cancelled) return
-      setShowWhatsNewChip(
-        shouldShowWhatsNewChip(seenId, WHATS_NEW_CONTENT.id)
-      )
+      setShowWhatsNewChip(shouldShowWhatsNewChip(seenId, WHATS_NEW_CONTENT.id))
     })
     return () => {
       cancelled = true
@@ -144,11 +143,9 @@ export function App() {
     useCallback(() => setSettingsOpen(true), []),
     { enabled: canvasSectionEditId == null }
   )
-  useHotkey(
-    (themeShortcut || "d") as RegisterableHotkey,
-    toggleLightDark,
-    { enabled: themeShortcut.length > 0 && canvasSectionEditId == null }
-  )
+  useHotkey((themeShortcut || "d") as RegisterableHotkey, toggleLightDark, {
+    enabled: themeShortcut.length > 0 && canvasSectionEditId == null,
+  })
 
   const handleEscape = useCallback(() => {
     if (whatsNewOpen) {
@@ -291,7 +288,9 @@ export function App() {
       if (!linkEditorScope) return
       if (linkEditorScope.kind === "standalone") {
         save((prev) => {
-          const idx = prev.standaloneLinks.findIndex((e) => e.link.id === link.id)
+          const idx = prev.standaloneLinks.findIndex(
+            (e) => e.link.id === link.id
+          )
           if (idx >= 0) {
             const next = [...prev.standaloneLinks]
             next[idx] = { ...next[idx], link }
@@ -328,7 +327,9 @@ export function App() {
       if (linkEditorScope.kind === "standalone") {
         save((prev) => ({
           ...prev,
-          standaloneLinks: prev.standaloneLinks.filter((e) => e.link.id !== linkId),
+          standaloneLinks: prev.standaloneLinks.filter(
+            (e) => e.link.id !== linkId
+          ),
         }))
         return
       }
@@ -500,6 +501,7 @@ export function App() {
               <DotBackground className="bg-background" />
               <Canvas
                 state={state}
+                browserAccountSync={browserAccountSync}
                 save={save}
                 onEditSection={openEditSection}
                 editingSectionId={canvasSectionEditId}
@@ -580,6 +582,8 @@ export function App() {
         onOpenChange={setSettingsOpen}
         state={state}
         settings={state.settings}
+        browserAccountSync={browserAccountSync}
+        onBrowserAccountSyncChange={setBrowserAccountSync}
         onSave={(settings) => save((prev) => ({ ...prev, settings }))}
         onReplaceState={(next) => save({ ...next, editMode: false })}
       />
@@ -631,7 +635,9 @@ export function App() {
             setExpandedCroppedPageId(null)
             setExpandOriginRect(null)
           }}
-          onEdit={(rect) => openCroppedPageCapture(expandedCroppedPage.id, rect)}
+          onEdit={(rect) =>
+            openCroppedPageCapture(expandedCroppedPage.id, rect)
+          }
         />
       ) : null}
     </>

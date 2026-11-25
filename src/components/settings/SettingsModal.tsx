@@ -14,6 +14,7 @@ import {
   TabsTrigger,
 } from "@/components/ui/tabs-classic"
 import type { AppState, Settings } from "@/types"
+import { getChromiumBrowserName } from "@/lib/utils"
 import { useTheme } from "@/components/theme-provider"
 import { SETTINGS_SECTIONS, THEME_OPTIONS } from "./settingsConfig"
 import type { SettingConfig } from "./settingsConfig"
@@ -51,6 +52,8 @@ type SettingsModalProps = {
   onOpenChange: (open: boolean) => void
   state: AppState
   settings: Settings
+  browserAccountSync: boolean
+  onBrowserAccountSyncChange: (enabled: boolean) => void
   onSave: (settings: Settings) => void
   onReplaceState: (state: AppState) => void
 }
@@ -58,8 +61,23 @@ type SettingsModalProps = {
 function renderSetting(
   config: SettingConfig,
   settings: Settings,
+  browserAccountSync: boolean,
+  onBrowserAccountSyncChange: (enabled: boolean) => void,
   onChange: (key: keyof Settings, value: string | boolean) => void
 ) {
+  if (config.type === "browserAccountSync") {
+    const browserName = getChromiumBrowserName()
+    return (
+      <BooleanSetting
+        key={config.id}
+        id={config.id}
+        label={`Sync with ${browserName}`}
+        description={config.description}
+        checked={browserAccountSync}
+        onChange={(checked) => void onBrowserAccountSyncChange(checked)}
+      />
+    )
+  }
   if (config.type === "theme") {
     return (
       <ThemeSetting
@@ -106,9 +124,10 @@ function renderSetting(
   }
   if (config.type === "boolean") {
     const disabled =
-      !settings.canvasRememberScroll &&
-      (config.id === "canvasScrollSync" ||
-        config.id === "canvasRestoreScrollOnResize")
+      (config.id === "canvasScrollSync" && !browserAccountSync) ||
+      (!settings.canvasRememberScroll &&
+        (config.id === "canvasScrollSync" ||
+          config.id === "canvasRestoreScrollOnResize"))
     return (
       <BooleanSetting
         key={config.id}
@@ -129,6 +148,8 @@ export function SettingsModal({
   onOpenChange,
   state,
   settings,
+  browserAccountSync,
+  onBrowserAccountSyncChange,
   onSave,
   onReplaceState,
 }: SettingsModalProps) {
@@ -174,7 +195,7 @@ export function SettingsModal({
                 <TabsTrigger
                   key={section.id}
                   value={section.id}
-                  className="inline-flex w-full flex-row items-center gap-2 text-left cursor-pointer justify-start rounded-none border-r-2 border-transparent px-4 py-2 data-[state=active]:border-r-2 data-[state=active]:border-primary data-[state=active]:bg-accent/50"
+                  className="inline-flex w-full cursor-pointer flex-row items-center justify-start gap-2 rounded-none border-r-2 border-transparent px-4 py-2 text-left data-[state=active]:border-r-2 data-[state=active]:border-primary data-[state=active]:bg-accent/50"
                 >
                   {section.icon && (
                     <section.icon
@@ -186,7 +207,7 @@ export function SettingsModal({
                 </TabsTrigger>
               ))}
             </TabsList>
-            <ScrollArea className="min-h-0 max-h-[min(70dvh,calc(90dvh-8rem))] flex-1">
+            <ScrollArea className="max-h-[min(70dvh,calc(90dvh-8rem))] min-h-0 flex-1">
               <div className="p-4">
                 {SETTINGS_SECTIONS.map((section) => (
                   <TabsContent
@@ -201,7 +222,13 @@ export function SettingsModal({
                       />
                     ) : (
                       section.settings?.map((config) =>
-                        renderSetting(config, settings, handleSettingChange)
+                        renderSetting(
+                          config,
+                          settings,
+                          browserAccountSync,
+                          onBrowserAccountSyncChange,
+                          handleSettingChange
+                        )
                       )
                     )}
                   </TabsContent>

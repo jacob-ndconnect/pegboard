@@ -7,6 +7,9 @@ type CroppedPageIframeProps = {
   className?: string
   title?: string
   interactive?: boolean
+  /** Saved frame. Set before src so the first layout viewport is this size. */
+  width?: number
+  height?: number
 }
 
 export function CroppedPageIframe({
@@ -14,6 +17,8 @@ export function CroppedPageIframe({
   className,
   title = "Pinned page",
   interactive = false,
+  width,
+  height,
 }: CroppedPageIframeProps) {
   const [src, setSrc] = useState<string | null>(null)
 
@@ -30,11 +35,20 @@ export function CroppedPageIframe({
 
   if (!src) return null
 
+  const sized = width != null && height != null
+
   return (
     <iframe
       src={src}
       title={title}
-      className={cn("size-full border-0 bg-background", className)}
+      width={sized ? width : undefined}
+      height={sized ? height : undefined}
+      style={sized ? { width, height } : undefined}
+      className={cn(
+        "border-0 bg-background",
+        sized ? "absolute top-0 left-0" : "size-full",
+        className
+      )}
       sandbox={
         interactive
           ? "allow-scripts allow-same-origin allow-forms allow-popups"

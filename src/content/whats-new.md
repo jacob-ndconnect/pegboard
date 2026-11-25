@@ -1,7 +1,11 @@
 ---
-id: 4
+id: 5
 title: What's new
 ---
+
+## Optional browser sync
+
+New installs keep your board on this device only. Turn on **Settings → Sync → Sync with Chrome** (or Edge) to store your board in your browser account and use it on other signed-in devices. Existing boards keep syncing like before.
 
 ## Easier editing/adding
 

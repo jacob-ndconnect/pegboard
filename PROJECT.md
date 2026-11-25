@@ -11,7 +11,8 @@ A Chrome extension that replaces the default new tab page with a customizable co
 - **@dnd-kit** for drag-and-drop
 - **@tanstack/react-hotkeys** for shortcuts (Mod+K style)
 - **Chrome Extension** (Manifest V3) — `chrome_url_overrides.newtab`
-- **chrome.storage.sync** for `AppState`; **chrome.storage.local** for canvas scroll anchor (optional mirror to sync) and what's-new ack (`whatsNewSeenId`, integer matching [`src/content/whats-new.md`](./src/content/whats-new.md) frontmatter `id` — not manifest version)
+- **`AppState` storage:** [`browserAccountSync`](./src/lib/browserAccountSync.ts) in `chrome.storage.local` chooses account vs device-only mode. When on (default for upgrades with an existing board), `AppState` uses `chrome.storage.sync` plus a device mirror `lastKnownAppState` in `chrome.storage.local`. When off (default for new installs), only `lastKnownAppState` is read/written. Toggle migrates the newer snapshot via [`pickBestAppState`](./src/lib/pickBestAppState.ts).
+- **Other local keys:** canvas scroll anchor (optional mirror to sync when account sync and `canvasScrollSync` are on), what's-new ack (`whatsNewSeenId`, integer matching [`src/content/whats-new.md`](./src/content/whats-new.md) frontmatter `id` — not manifest version)
 - **Service worker** (`background.ts` → `background.js`) for omnibox and context-menu pin
 - **Toolbar popup** (`popup.html` → `src/popup/`) — action click menu to add the current page as a shortcut or cutout
 
@@ -23,12 +24,12 @@ A Chrome extension that replaces the default new tab page with a customizable co
 
 | Type               | Description                                                                                                                                                                                                                                                     |
 | ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `Link`             | `id`, `url`, `label`, optional `searchTerms` (palette search only), optional `badge`, optional `invertIcon` (favicon CSS invert in dark mode), optional `customIcon` (unused in UI yet)                                                                                                                                         |
+| `Link`             | `id`, `url`, `label`, optional `searchTerms` (palette search only), optional `badge`, optional `invertIcon` (favicon CSS invert in dark mode), optional `customIcon` (unused in UI yet)                                                                         |
 | `Section`          | `id`, `name`, `accentColor`, `links[]`, `position` (`x`, `y` for Canvas), optional `canvasColumnSpan` (link **tiles per row** on canvas; default = link count; width math in `canvasGrid.ts` — tile stride matches `LinkCard` + `SectionLinkDraggable` spacing) |
 | `SectionLabelSize` | Tailwind text classes (`text-xs` … `text-3xl`) for canvas section title typography                                                                                                                                                                              |
-| `Settings`         | `searchShortcut`, `settingsShortcut`, `themeShortcut` (empty disables), `sectionLabelSize`, `canvasRememberScroll`, `canvasScrollSync`, `canvasRestoreScrollOnResize`                                                                                                                             |
+| `Settings`         | `searchShortcut`, `settingsShortcut`, `themeShortcut` (empty disables), `sectionLabelSize`, `canvasRememberScroll`, `canvasScrollSync`, `canvasRestoreScrollOnResize`                                                                                           |
 | `CroppedPage`      | `id`, `url`, `label`, `accentColor`, canvas `position`, `frame` `{width,height}` (iframe layout at save), `crop` `{x,y,width,height}` in frame space — canvas-only cutouts ([`docs/features/cropped-page-widgets.md`](./docs/features/cropped-page-widgets.md)) |
-| `AppState`         | `sections[]`, `standaloneLinks[]`, `croppedPages[]`, `layoutMode` ("canvas" \| "list" \| "folders"), `editMode`, `settings`, optional `updatedAt` (ms, last save — which sync snapshot wins) |
+| `AppState`         | `sections[]`, `standaloneLinks[]`, `croppedPages[]`, `layoutMode` ("canvas" \| "list" \| "folders"), `editMode`, `settings`, optional `updatedAt` (ms, last save — which sync snapshot wins)                                                                    |
 | `BadgeStyle`       | `emoji`, `color` (hex)                                                                                                                                                                                                                                          |
 
 ---
@@ -65,9 +66,9 @@ Root component. Responsibilities:
 
 ### `src/hooks/useStorage.ts`
 
-**Purpose:** Load and persist `AppState` via `chrome.storage.sync`.
+**Purpose:** Load and persist `AppState` via the active store ([`browserAccountSync`](./src/lib/browserAccountSync.ts)).
 
-- **Returns:** `{ state, save, loaded }`
+- **Returns:** `{ state, save, loaded, browserAccountSync, setBrowserAccountSync }`
 - **Defaults:** `DEFAULT_SETTINGS` (shortcuts, section label size, canvas scroll + resize toggles) merged into stored `appState.settings` on load; missing keys are backfilled in memory and written on the next user save
 - **save:** Accepts `AppState` or `(prev: AppState) => AppState`; stamps `updatedAt`; uses functional `setState` and `queueMicrotask` for storage write
 - **Sync conflicts:** [`preferIncoming`](./src/lib/appStateRevision.ts) last-write-wins by `updatedAt`. A blank board does not replace a legacy (unstamped) populated board. While Chrome sync is still catching up, the larger board wins. A device-local `lastKnownAppState` copy can restore sync if a stale empty blob arrives.
@@ -78,7 +79,7 @@ Root component. Responsibilities:
 
 **Purpose:** Persist and restore canvas scroll using viewport-center coordinates in content space.
 
-- **Reads/writes:** `canvasScrollAnchor` in `chrome.storage.local`; when `settings.canvasScrollSync` is true, also mirrors to `chrome.storage.sync`
+- **Reads/writes:** `canvasScrollAnchor` in `chrome.storage.local`; when account sync and `settings.canvasScrollSync` are true, also mirrors to `chrome.storage.sync`
 - **Restore:** On mount (if `canvasRememberScroll`), load anchor and apply after layout (double `requestAnimationFrame`); if none, scrolls to geometric center of scrollable content
 - **Save:** Debounced `scroll` (~200ms); flush on `visibilitychange` (hidden) / `pagehide`
 - **Resize:** When `canvasRestoreScrollOnResize`, a ref holds the **last content-space viewport center** (updated on scroll and after restore); after scrollport or content size changes, that point is re-centered (`ResizeObserver` + `window.resize`, coalesced with `requestAnimationFrame`). If the ref is still unset, it is seeded from the current viewport center before reclamp. Recomputing the center from `scrollLeft`/`scrollTop` immediately after resize cancels the adjustment because `clientWidth`/`clientHeight` changed but scroll offsets have not. The scroll listener and resize `ResizeObserver` attach in **`useLayoutEffect`** so subscriptions line up with committed refs.
@@ -114,7 +115,7 @@ Root component. Responsibilities:
 
 - **Manifest:** `"omnibox": { "keyword": "pb" }` — changing the keyword requires editing the manifest / repacking the extension; Settings shows an **info** row explaining Chrome’s “Manage search engines” flow
 - **Icons:** `public/icons/icon{16,32,48,128}.png` (the B mark). The new-tab tab favicon is separate (`index.html` → `favicon.svg` / `favicon.ico`). Context menus use the 16×16 in color. The omnibox keyword chip (gray icon next to the name after typing `pb`) is owned by Chrome — there is no `chrome.omnibox` icon API. Chrome loads that bitmap once via its omnibox icon manager / search-engine entry; **Reload on `chrome://extensions` often keeps the old chip.** To refresh it: Remove the unpacked extension, Load unpacked again (loads from `dist/` after `npm run build`), then fully quit Chrome. Optional: `chrome://settings/searchEngines` and confirm the PegBoard/`pb` engine isn’t a leftover with a stale favicon.
-- **Behavior:** On input, reads `chrome.storage.sync` under the same `appState` key as the new tab page, filters links by label / domain / `searchTerms`, suggests matches; Enter navigates current or new tab based on disposition
+- **Behavior:** On input, reads the active `appState` store (sync or `lastKnownAppState` per [`browserAccountSync`](./src/lib/browserAccountSync.ts)), filters links by label / domain / `searchTerms`, suggests matches; Enter navigates current or new tab based on disposition
 - **Toolbar action:** `action.default_popup` is `popup.html`. It reads the active tab (host permission covers the URL) and offers **Add shortcut** (same fields as [`LinkEditor`](./src/components/editor/LinkEditor.tsx), written with [`appendStandalonePin`](./src/lib/appendStandalonePin.ts)) or **Add cutout** (opens `index.html?cutout=…` in a new tab). The new tab opens Add Cutout with that URL via [`readToolbarCutoutIntent`](./src/lib/toolbarCutout.ts) and switches to canvas when the cutout is saved.
 - **Types:** Background uses a minimal `AppState` shape (sections + links); keep in sync when adding top-level fields the omnibox should ignore or use
 
@@ -250,20 +251,20 @@ Theme context (dark/light/system), localStorage persistence, system preference l
 
 ## Lib Utilities
 
-| File                            | Exports                                                                          | Purpose                                                   |
-| ------------------------------- | -------------------------------------------------------------------------------- | --------------------------------------------------------- |
-| `src/lib/utils.ts`              | `cn(...)`                                                                        | `clsx` + `tailwind-merge`; `getChromiumBrowserName()` for onboarding copy |
-| `src/lib/canvasScrollAnchor.ts` | `readCanvasScrollAnchor`, `writeCanvasScrollAnchor`, `applyScrollToCenter`, etc. | Canvas scroll anchor in `storage.local` / optional `sync` |
-| `src/lib/normalizeAppState.ts`  | `normalizeAppState`, `applyStoredStateBackfill`, `migrateSections`             | Shared normalization for sync load and config import      |
-| `src/lib/appStateRevision.ts`   | `stampAppState`, `preferIncoming`, `boardItemCount`                            | Which `appState` snapshot should win across devices       |
-| `src/lib/pegboardConfig.ts`     | `serializeConfigYaml`, `parseConfigTextAsync`, `CONFIG_VERSION`                  | Versioned YAML export/import (`pegboard.yml`)             |
-| `src/lib/favicon.ts`            | `getFaviconUrl`, `getFaviconFallbackUrl`                                         | Favicon URLs for a link’s domain                          |
-| `src/lib/url.ts`                | `getDomain(url)`                                                                 | Hostname without `www.`                                   |
-| `src/lib/color-swatches.ts`     | `COLOR_SWATCHES`                                                                 | Preset hex colors for pickers                             |
+| File                            | Exports                                                                          | Purpose                                                                                                          |
+| ------------------------------- | -------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `src/lib/utils.ts`              | `cn(...)`                                                                        | `clsx` + `tailwind-merge`; `getChromiumBrowserName()` for onboarding copy                                        |
+| `src/lib/canvasScrollAnchor.ts` | `readCanvasScrollAnchor`, `writeCanvasScrollAnchor`, `applyScrollToCenter`, etc. | Canvas scroll anchor in `storage.local` / optional `sync`                                                        |
+| `src/lib/normalizeAppState.ts`  | `normalizeAppState`, `applyStoredStateBackfill`, `migrateSections`               | Shared normalization for sync load and config import                                                             |
+| `src/lib/appStateRevision.ts`   | `stampAppState`, `preferIncoming`, `boardItemCount`                              | Which `appState` snapshot should win across devices                                                              |
+| `src/lib/pegboardConfig.ts`     | `serializeConfigYaml`, `parseConfigTextAsync`, `CONFIG_VERSION`                  | Versioned YAML export/import (`pegboard.yml`)                                                                    |
+| `src/lib/favicon.ts`            | `getFaviconUrl`, `getFaviconFallbackUrl`                                         | Favicon URLs for a link’s domain                                                                                 |
+| `src/lib/url.ts`                | `getDomain(url)`                                                                 | Hostname without `www.`                                                                                          |
+| `src/lib/color-swatches.ts`     | `COLOR_SWATCHES`                                                                 | Preset hex colors for pickers                                                                                    |
 | `src/lib/color.ts`              | `getContrastColor`, `ensureForegroundContrast`                                   | Off-white/off-black text on accent fills; lighten or darken unfilled accent ink so it clears the page background |
-| `src/lib/whatsNew.ts`           | `parseWhatsNewMarkdown`, `readWhatsNewSeenId`, `writeWhatsNewSeenId`, …          | Changelog frontmatter parse; local ack for what's-new chip |
-| `src/lib/whatsNewContent.ts`    | `WHATS_NEW_CONTENT`                                                              | Parsed [`src/content/whats-new.md`](./src/content/whats-new.md) at build time |
-| `src/lib/flags.ts`              | `FLAGS`                                                                          | Dev toggles (e.g. `alwaysShowWhatsNew`)                     |
+| `src/lib/whatsNew.ts`           | `parseWhatsNewMarkdown`, `readWhatsNewSeenId`, `writeWhatsNewSeenId`, …          | Changelog frontmatter parse; local ack for what's-new chip                                                       |
+| `src/lib/whatsNewContent.ts`    | `WHATS_NEW_CONTENT`                                                              | Parsed [`src/content/whats-new.md`](./src/content/whats-new.md) at build time                                    |
+| `src/lib/flags.ts`              | `FLAGS`                                                                          | Dev toggles (e.g. `alwaysShowWhatsNew`)                                                                          |
 
 ---
 
@@ -295,7 +296,7 @@ Theme context (dark/light/system), localStorage persistence, system preference l
 1. **State updates:** Prefer `save((prev) => ({ ...prev, ... }))` to avoid stale closures.
 2. **Canvas drag:** Use `transform` from `useDraggable`, not `event.delta`, in scrollable containers.
 3. **Positions:** `normalizePosition` and [`migrateSections`](./src/lib/normalizeAppState.ts) ensure valid `{x,y}`; invalid values get grid fallback.
-4. **Extension:** `chrome.storage.sync` for `appState`; canvas scroll anchor uses `storage.local` (optional `sync`); `base: "./"` in Vite for extension asset paths.
+4. **Extension:** `appState` in `chrome.storage.sync` when account sync is on, else `lastKnownAppState` in `chrome.storage.local`; canvas scroll anchor uses `storage.local` (optional `sync`); `base: "./"` in Vite for extension asset paths.
 5. **Settings:** Defaults merged on load via [`normalizeAppState`](./src/lib/normalizeAppState.ts); new `Settings` keys go in `DEFAULT_SETTINGS` and optionally `settingsConfig` UI.
 6. **Portability:** Export/import YAML from Settings → Data; bump `CONFIG_VERSION` in [`pegboardConfig.ts`](./src/lib/pegboardConfig.ts) when the file schema changes; app-level renames in `normalizeAppState`.
 

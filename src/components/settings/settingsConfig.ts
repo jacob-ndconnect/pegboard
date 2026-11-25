@@ -51,6 +51,12 @@ export type SettingConfig =
       description?: string
       type: "theme"
     }
+  | {
+      id: "browserAccountSync"
+      label: string
+      description?: string
+      type: "browserAccountSync"
+    }
 
 export type SupportLink = {
   label: string
@@ -161,6 +167,13 @@ export const SETTINGS_SECTIONS: SettingsSection[] = [
     label: "Sync",
     icon: CloudArrowUpIcon,
     settings: [
+      {
+        id: "browserAccountSync",
+        label: "Sync with browser",
+        description:
+          "Store your board in your browser account so it follows you across signed-in devices. Off keeps everything on this device only.",
+        type: "browserAccountSync",
+      },
       {
         id: "canvasScrollSync",
         label: "Sync canvas scroll",

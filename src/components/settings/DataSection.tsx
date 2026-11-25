@@ -21,9 +21,10 @@ export function DataSectionContent({
 }: DataSectionContentProps) {
   const { theme, setTheme } = useTheme()
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const [status, setStatus] = useState<{ kind: "error" | "success"; text: string } | null>(
-    null
-  )
+  const [status, setStatus] = useState<{
+    kind: "error" | "success"
+    text: string
+  } | null>(null)
   const [busy, setBusy] = useState(false)
 
   const handleExport = useCallback(async () => {
@@ -83,8 +84,8 @@ export function DataSectionContent({
     <div className="flex flex-col gap-6">
       <p className="text-xs text-muted-foreground/80">
         Export your board to a YAML config file (pegboard.yml). Import replaces
-        everything stored in sync: sections, ungrouped links, layout, and
-        settings. Theme is included when present in the file.
+        your saved board: sections, ungrouped links, layout, and settings. Theme
+        is included when present in the file.
       </p>
       <div className="flex flex-wrap gap-2">
         <Button

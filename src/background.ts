@@ -1,17 +1,14 @@
 /// <reference types="chrome"/>
 
 import type { AppState, Link, Section } from "@/types"
-import {
-  APP_STATE_STORAGE_KEY,
-  LAST_KNOWN_APP_STATE_KEY,
-} from "@/lib/appStateStorageKey"
-import { coalesceAppState } from "@/lib/coalesceAppState"
 import { appendStandalonePin } from "@/lib/appendStandalonePin"
 import {
-  preferIncoming,
-  stampAppState,
-} from "@/lib/appStateRevision"
+  loadMutableAppState,
+  writeMutableAppState,
+} from "@/lib/commitAppState"
+import { stampAppState } from "@/lib/appStateRevision"
 import { enableIframeEmbedHeaders } from "@/lib/iframeEmbedHeaders"
+import { readBoardForOmnibox } from "@/lib/readBoardForBackground"
 
 const MAX_SUGGESTIONS = 6
 const CONTEXT_MENU_PIN_ID = "pegboard-pin-to-standalone"
@@ -95,21 +92,14 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
       ? ""
       : (tab?.title?.trim() ?? "")
 
-  chrome.storage.sync.get(APP_STATE_STORAGE_KEY, (syncResult) => {
-    if (chrome.runtime.lastError) return
-    chrome.storage.local.get(LAST_KNOWN_APP_STATE_KEY, (localResult) => {
-      const fromSync = coalesceAppState(syncResult[APP_STATE_STORAGE_KEY])
-      const fromLocal = coalesceAppState(localResult[LAST_KNOWN_APP_STATE_KEY])
-      const prev = preferIncoming(fromLocal, fromSync, "hydrating")
-        ? fromLocal
-        : fromSync
-      const outcome = appendStandalonePin(prev, url, label)
-      if (outcome === "invalid" || outcome === "duplicate") return
-      const next = stampAppState(outcome.next)
-      chrome.storage.sync.set({ [APP_STATE_STORAGE_KEY]: next })
-      chrome.storage.local.set({ [LAST_KNOWN_APP_STATE_KEY]: next })
-    })
-  })
+  void (async () => {
+    const { prev, accountSyncEnabled, flagWasAbsent } =
+      await loadMutableAppState()
+    const outcome = appendStandalonePin(prev, url, label)
+    if (outcome === "invalid" || outcome === "duplicate") return
+    const next = stampAppState(outcome.next)
+    await writeMutableAppState(next, accountSyncEnabled, flagWasAbsent)
+  })()
 })
 
 chrome.omnibox.setDefaultSuggestion({
@@ -117,8 +107,7 @@ chrome.omnibox.setDefaultSuggestion({
 })
 
 chrome.omnibox.onInputChanged.addListener((text, suggest) => {
-  chrome.storage.sync.get(APP_STATE_STORAGE_KEY, (result) => {
-    const appState = result[APP_STATE_STORAGE_KEY] as AppState | undefined
+  readBoardForOmnibox((appState) => {
     const sections = appState?.sections ?? []
     const standaloneLinks = appState?.standaloneLinks ?? []
     const matches = collectMatchingLinks(sections, standaloneLinks, text)
@@ -157,8 +146,7 @@ chrome.omnibox.onInputEntered.addListener((text, disposition) => {
     navigate(text)
     return
   }
-  chrome.storage.sync.get(APP_STATE_STORAGE_KEY, (result) => {
-    const appState = result[APP_STATE_STORAGE_KEY] as AppState | undefined
+  readBoardForOmnibox((appState) => {
     const sections = appState?.sections ?? []
     const standaloneLinks = appState?.standaloneLinks ?? []
     const matches = collectMatchingLinks(sections, standaloneLinks, text)

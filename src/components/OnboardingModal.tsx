@@ -109,7 +109,7 @@ function getStepContent(
     case 3:
       return {
         visual: <SyncVisual />,
-        body: `Pins, sections, and settings sync with your ${browserName} account when you are signed in. Same board on every device using that profile.`,
+        body: `You can optionally sync pins, sections, and settings with your ${browserName} account in Settings → Sync. Until you turn that on, your board stays on this device only.`,
       }
     default:
       return { visual: null, body: "" }

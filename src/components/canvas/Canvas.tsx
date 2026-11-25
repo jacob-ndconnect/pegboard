@@ -1,12 +1,13 @@
-import { useCallback, useLayoutEffect, useRef, useState, type RefObject } from "react"
+import {
+  useCallback,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type RefObject,
+} from "react"
 import { useCanvasPointerPan } from "@/hooks/useCanvasPointerPan"
 import { useCanvasScrollAnchor } from "@/hooks/useCanvasScrollAnchor"
-import {
-  DndContext,
-  PointerSensor,
-  useSensor,
-  useSensors,
-} from "@dnd-kit/core"
+import { DndContext, PointerSensor, useSensor, useSensors } from "@dnd-kit/core"
 import type { DragEndEvent } from "@dnd-kit/core"
 import {
   CROPPED_PAGE_ID_PREFIX,
@@ -31,6 +32,7 @@ const DRAGGABLE_ONLY_IN_EDIT = false
 
 type CanvasProps = {
   state: AppState
+  browserAccountSync: boolean
   save: (newStateOrUpdater: AppState | ((prev: AppState) => AppState)) => void
   onEditSection: (section: Section) => void
   /** Section whose name and color are being edited on the canvas. */
@@ -89,6 +91,7 @@ function standaloneDropPositionFromDragEnd(
 
 export function Canvas({
   state,
+  browserAccountSync,
   save,
   onEditSection,
   editingSectionId = null,
@@ -130,18 +133,14 @@ export function Canvas({
     padRef,
     contentRef: placementRootRef,
     remember: settings.canvasRememberScroll,
-    useSync: settings.canvasScrollSync,
+    useSync: browserAccountSync && settings.canvasScrollSync,
     restoreOnResize: settings.canvasRestoreScrollOnResize,
   })
 
-  const {
-    onPointerDownCapture,
-    onLostPointerCapture,
-    spaceDown,
-    isPanning,
-  } = useCanvasPointerPan({
-    scrollRef: scrollContainerRef,
-  })
+  const { onPointerDownCapture, onLostPointerCapture, spaceDown, isPanning } =
+    useCanvasPointerPan({
+      scrollRef: scrollContainerRef,
+    })
 
   const handleTransformChange = useCallback(
     (_id: string, transform: { x: number; y: number } | null) => {
@@ -251,14 +250,13 @@ export function Canvas({
         onPointerDownCapture={onPointerDownCapture}
         onLostPointerCapture={onLostPointerCapture}
         className={cn(
-          "absolute inset-0 overflow-auto scrollbar-none [overflow-anchor:none]",
+          "scrollbar-none absolute inset-0 overflow-auto [overflow-anchor:none]",
           editMode && "canvas-grid",
           isPanning && "cursor-grabbing",
           !isPanning && spaceDown && "cursor-grab"
         )}
         data-canvas-scroll=""
       >
-
         <div ref={padRef} className="relative box-border w-max">
           <CanvasStandaloneDropLayer />
           <div
@@ -294,9 +292,7 @@ export function Canvas({
                   save((prev) => ({
                     ...prev,
                     sections: prev.sections.map((s) =>
-                      s.id === section.id
-                        ? { ...s, canvasColumnSpan: span }
-                        : s
+                      s.id === section.id ? { ...s, canvasColumnSpan: span } : s
                     ),
                   }))
                 }}

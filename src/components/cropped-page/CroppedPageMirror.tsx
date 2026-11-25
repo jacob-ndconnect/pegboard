@@ -22,7 +22,12 @@ function pageShift(
   rect: DOMRect
 ): { x: number; y: number } {
   if (role !== "canvas") {
-    return croppedPageRevealShift(page.frame, page.crop, rect.width, rect.height)
+    return croppedPageRevealShift(
+      page.frame,
+      page.crop,
+      rect.width,
+      rect.height
+    )
   }
   return { x: -page.crop.x, y: -page.crop.y }
 }
@@ -42,11 +47,12 @@ function applyBox(
   node.style.zIndex = role === "canvas" ? "1" : "230"
   if (!inner) return
   const shift = pageShift(page, role, rect)
-  inner.style.left = "0px"
-  inner.style.top = "0px"
+  // A transformed ancestor makes Chrome size the iframe viewport to the window.
+  inner.style.left = `${shift.x}px`
+  inner.style.top = `${shift.y}px`
   inner.style.width = `${page.frame.width}px`
   inner.style.height = `${page.frame.height}px`
-  inner.style.transform = `translate3d(${shift.x}px, ${shift.y}px, 0)`
+  inner.style.transform = "none"
 }
 
 export function CroppedPageMirror({
@@ -98,8 +104,17 @@ export function CroppedPageMirror({
       )}
       style={{ visibility: "hidden" }}
     >
-      <div ref={innerRef} className="absolute">
-        <CroppedPageIframe url={page.url} interactive />
+      <div
+        ref={innerRef}
+        className="absolute"
+        style={{ width: page.frame.width, height: page.frame.height }}
+      >
+        <CroppedPageIframe
+          url={page.url}
+          interactive
+          width={page.frame.width}
+          height={page.frame.height}
+        />
       </div>
     </div>,
     document.body
