@@ -22,6 +22,7 @@ describe("normalizeAppState croppedPages", () => {
           position: { x: 0, y: 0 },
           frame: { width: 800, height: 600 },
           crop: { x: 10, y: 10, width: 200, height: 100 },
+          scroll: { x: 0, y: 0 },
           label: "Example",
         },
         { id: "bad", url: "" } as unknown as import("@/types").CroppedPage,

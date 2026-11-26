@@ -1,4 +1,10 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react"
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react"
 import { Button } from "@/components/ui/button"
 import { ColorPickerPopover } from "@/components/ui/color-picker"
 import { COLOR_SWATCHES } from "@/lib/color-swatches"
@@ -9,10 +15,17 @@ import {
   clampCropToFrame,
   croppedPageLabelFromUrl,
   croppedPageRevealShift,
+  CUTOUT_DRAFT_IFRAME_NAME,
   cutoutFrameCollapsed,
+  cutoutIframeName,
   defaultCropRect,
   openCutoutContentSize,
 } from "@/lib/croppedPage"
+import {
+  pinCutoutFrameScroll,
+  readCutoutFrameScroll,
+  unpinCutoutFrameScroll,
+} from "@/lib/cutoutFrameScroll"
 import type { CroppedPage, CroppedPageRect } from "@/types"
 import { CroppedPageIframe } from "./CroppedPageIframe"
 import {
@@ -130,10 +143,10 @@ function CropMask({
             key={handle}
             className={cn(
               "pointer-events-auto absolute z-20 size-3 rounded-full border border-white bg-foreground/80",
-              handle === "nw" && "-left-1.5 -top-1.5 cursor-nwse-resize",
-              handle === "ne" && "-right-1.5 -top-1.5 cursor-nesw-resize",
+              handle === "nw" && "-top-1.5 -left-1.5 cursor-nwse-resize",
+              handle === "ne" && "-top-1.5 -right-1.5 cursor-nesw-resize",
               handle === "sw" && "-bottom-1.5 -left-1.5 cursor-nesw-resize",
-              handle === "se" && "-bottom-1.5 -right-1.5 cursor-nwse-resize"
+              handle === "se" && "-right-1.5 -bottom-1.5 cursor-nwse-resize"
             )}
             onPointerDown={(event) => onPointerDown(handle, event)}
           />
@@ -169,6 +182,7 @@ export function CroppedPageCaptureOverlay({
   const savedLayoutRef = useRef<{
     frame: { width: number; height: number }
     crop: CroppedPageRect
+    scroll: { x: number; y: number }
   } | null>(null)
   const [target] = useState(targetFrameRect)
   const [frameSize, setFrameSize] = useState({
@@ -177,11 +191,15 @@ export function CroppedPageCaptureOverlay({
   })
   const frameCollapsed =
     session.existing != null &&
-    cutoutFrameCollapsed(session.existing.frame, session.existing.crop, frameSize)
+    cutoutFrameCollapsed(
+      session.existing.frame,
+      session.existing.crop,
+      frameSize
+    )
   const frameSpace =
     session.existing && !frameCollapsed ? session.existing.frame : frameSize
-  const [crop, setCrop] = useState<CroppedPageRect>(() =>
-    session.existing?.crop ?? defaultCropRect(800, 600)
+  const [crop, setCrop] = useState<CroppedPageRect>(
+    () => session.existing?.crop ?? defaultCropRect(800, 600)
   )
   const [label, setLabel] = useState(session.label)
   const [accentColor, setAccentColor] = useState(session.accentColor)
@@ -205,6 +223,24 @@ export function CroppedPageCaptureOverlay({
     reducedMotion || !originRect ? "open" : "from"
   )
   const reuseFrame = session.pageId != null && !frameCollapsed
+  const cutoutFrameName =
+    session.pageId != null
+      ? cutoutIframeName(session.pageId)
+      : CUTOUT_DRAFT_IFRAME_NAME
+
+  useEffect(() => {
+    if (session.pageId) {
+      void unpinCutoutFrameScroll(cutoutIframeName(session.pageId))
+    }
+    return () => {
+      if (!finishedRef.current && session.existing && session.pageId) {
+        void pinCutoutFrameScroll(
+          cutoutIframeName(session.pageId),
+          session.existing.scroll
+        )
+      }
+    }
+  }, [session.existing, session.pageId])
 
   useEffect(() => {
     if (!reuseFrame) return
@@ -330,7 +366,9 @@ export function CroppedPageCaptureOverlay({
       const dx = e.clientX - drag.startX
       const dy = e.clientY - drag.startY
       if (drag.handle === "move") {
-        setCrop(moveCrop(drag.startCrop, dx, dy, frameSpace.width, frameSpace.height))
+        setCrop(
+          moveCrop(drag.startCrop, dx, dy, frameSpace.width, frameSpace.height)
+        )
       } else {
         setCrop(
           resizeCropFromHandle(
@@ -366,6 +404,7 @@ export function CroppedPageCaptureOverlay({
       const laidOut = savedLayoutRef.current ?? {
         frame: frameSpace,
         crop: clampCropToFrame(crop, frameSpace.width, frameSpace.height),
+        scroll: session.existing?.scroll ?? { x: 0, y: 0 },
       }
       onSave({
         id,
@@ -375,11 +414,20 @@ export function CroppedPageCaptureOverlay({
         position,
         frame: laidOut.frame,
         crop: laidOut.crop,
+        scroll: laidOut.scroll,
       })
       return
     }
     if (action === "delete") onDelete?.()
-    else onCancel()
+    else {
+      if (session.pageId && session.existing) {
+        void pinCutoutFrameScroll(
+          cutoutIframeName(session.pageId),
+          session.existing.scroll
+        )
+      }
+      onCancel()
+    }
   }, [
     accentColor,
     crop,
@@ -393,13 +441,15 @@ export function CroppedPageCaptureOverlay({
   ])
 
   const requestClose = useCallback(
-    (action: CloseAction) => {
+    async (action: CloseAction) => {
       if (phase === "to") return
       closeActionRef.current = action
       if (action === "save") {
+        const scroll = await readCutoutFrameScroll(cutoutFrameName)
         savedLayoutRef.current = {
           frame: frameSpace,
           crop: clampCropToFrame(crop, frameSpace.width, frameSpace.height),
+          scroll,
         }
       }
       if (reducedMotion || !originRect) {
@@ -410,6 +460,7 @@ export function CroppedPageCaptureOverlay({
     },
     [
       crop,
+      cutoutFrameName,
       finishClose,
       frameSpace,
       originRect,
@@ -421,7 +472,8 @@ export function CroppedPageCaptureOverlay({
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       if (event.key !== "Escape") return
-      if (document.querySelector("[data-slot=color-picker-popover-panel]")) return
+      if (document.querySelector("[data-slot=color-picker-popover-panel]"))
+        return
       event.preventDefault()
       event.stopPropagation()
       requestClose("cancel")
@@ -439,7 +491,11 @@ export function CroppedPageCaptureOverlay({
   const panelRect = originRect && phase !== "open" ? originRect : target
 
   return (
-    <div className="fixed inset-0 z-[220]" role="dialog" aria-label="Edit cutout">
+    <div
+      className="fixed inset-0 z-[220]"
+      role="dialog"
+      aria-label="Edit cutout"
+    >
       <div
         className={cn(
           "absolute inset-0 bg-black/40",
@@ -497,7 +553,10 @@ export function CroppedPageCaptureOverlay({
               panelZIndex={260}
               triggerClassName="size-8 justify-center border-0 bg-transparent p-0 hover:bg-white/10"
               trigger={
-                <PaletteIcon className="size-5" style={{ color: readableAccent }} />
+                <PaletteIcon
+                  className="size-5"
+                  style={{ color: readableAccent }}
+                />
               }
             />
           </div>
@@ -559,7 +618,10 @@ export function CroppedPageCaptureOverlay({
             >
               {reuseFrame ? null : (
                 <>
-                  <CroppedPageIframe url={session.url} interactive />
+                  <CroppedPageIframe
+                    url={session.url}
+                    frameName={cutoutFrameName}
+                  />
                   {cropHidden ? null : (
                     <CropMask
                       screenCrop={crop}

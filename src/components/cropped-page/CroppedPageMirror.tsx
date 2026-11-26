@@ -1,7 +1,11 @@
-import { useEffect, useRef } from "react"
+import { useCallback, useEffect, useRef } from "react"
 import { cn } from "@/lib/utils"
 import { createPortal } from "react-dom"
-import { croppedPageRevealShift } from "@/lib/croppedPage"
+import { croppedPageRevealShift, cutoutIframeName } from "@/lib/croppedPage"
+import {
+  holdCutoutFrameScroll,
+  unpinCutoutFrameScroll,
+} from "@/lib/cutoutFrameScroll"
 import type { CroppedPage } from "@/types"
 import { CroppedPageIframe } from "./CroppedPageIframe"
 import {
@@ -63,6 +67,51 @@ export function CroppedPageMirror({
   const innerRef = useRef<HTMLDivElement | null>(null)
   const pageRef = useRef(page)
   pageRef.current = page
+  const scrollReadyRef = useRef(page.scroll.x === 0 && page.scroll.y === 0)
+
+  const revealScroll = useCallback(() => {
+    scrollReadyRef.current = true
+  }, [])
+
+  useEffect(() => {
+    const frameName = cutoutIframeName(page.id)
+    const scroll = page.scroll
+    const needsHold = scroll.x > 0 || scroll.y > 0
+    let stopped = false
+    let editing = activeCroppedPageSlot(page.id)?.role === "editing"
+
+    if (!needsHold) revealScroll()
+    else scrollReadyRef.current = false
+
+    const unsubscribePin = subscribeCroppedPageSlots(() => {
+      const role = activeCroppedPageSlot(page.id)?.role
+      const nextEditing = role == null || role === "editing"
+      if (nextEditing && !editing) {
+        editing = true
+        revealScroll()
+        void unpinCutoutFrameScroll(frameName)
+      } else if (!nextEditing && editing) {
+        editing = false
+      }
+    })
+
+    if (needsHold) {
+      void holdCutoutFrameScroll(
+        frameName,
+        scroll,
+        () => stopped,
+        () => editing
+      ).then(() => {
+        if (!stopped) revealScroll()
+      })
+    }
+
+    return () => {
+      stopped = true
+      unsubscribePin()
+      void unpinCutoutFrameScroll(frameName)
+    }
+  }, [page.id, page.scroll.x, page.scroll.y, revealScroll])
 
   useEffect(() => {
     let frame = 0
@@ -83,6 +132,15 @@ export function CroppedPageMirror({
         slot.role,
         slot.element.getBoundingClientRect()
       )
+      const current = pageRef.current
+      const needsScroll = current.scroll.x > 0 || current.scroll.y > 0
+      const inner = innerRef.current
+      if (inner) {
+        inner.style.visibility =
+          slot.role !== "editing" && needsScroll && !scrollReadyRef.current
+            ? "hidden"
+            : "visible"
+      }
     }
     const unsubscribe = subscribeCroppedPageSlots(() => {
       cancelAnimationFrame(frame)
@@ -111,7 +169,7 @@ export function CroppedPageMirror({
       >
         <CroppedPageIframe
           url={page.url}
-          interactive
+          frameName={cutoutIframeName(page.id)}
           width={page.frame.width}
           height={page.frame.height}
         />

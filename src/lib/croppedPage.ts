@@ -1,4 +1,4 @@
-import type { CroppedPage, CroppedPageRect } from "@/types"
+import type { CroppedPage, CroppedPageRect, CroppedPageScroll } from "@/types"
 import { isValidPosition } from "@/lib/normalizeAppState"
 import { standaloneSpawnPosition } from "@/lib/standaloneSpawnPosition"
 
@@ -14,6 +14,24 @@ export function croppedPageLabelFromUrl(url: string): string {
 
 function isFinitePositive(n: unknown): n is number {
   return typeof n === "number" && Number.isFinite(n) && n > 0
+}
+
+function isFiniteNonNegative(n: unknown): n is number {
+  return typeof n === "number" && Number.isFinite(n) && n >= 0
+}
+
+export function cutoutIframeName(pageId: string): string {
+  return `pegboard-cutout:${pageId}`
+}
+
+export const CUTOUT_DRAFT_IFRAME_NAME = "pegboard-cutout:draft"
+
+export function coerceCroppedPageScroll(raw: unknown): CroppedPageScroll {
+  if (!raw || typeof raw !== "object") return { x: 0, y: 0 }
+  const s = raw as CroppedPageScroll
+  const x = isFiniteNonNegative(s.x) ? s.x : 0
+  const y = isFiniteNonNegative(s.y) ? s.y : 0
+  return { x, y }
 }
 
 function coerceRect(raw: unknown): CroppedPageRect | null {
@@ -68,6 +86,7 @@ export function coerceCroppedPage(raw: unknown): CroppedPage | null {
     typeof r.label === "string" && r.label.trim().length > 0
       ? r.label.trim()
       : croppedPageLabelFromUrl(url)
+  const scroll = coerceCroppedPageScroll(r.scroll)
   return {
     id,
     url,
@@ -79,6 +98,7 @@ export function coerceCroppedPage(raw: unknown): CroppedPage | null {
       height: (frameRaw as { height: number }).height,
     },
     crop,
+    scroll,
   }
 }
 

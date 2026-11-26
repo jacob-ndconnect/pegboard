@@ -25,6 +25,11 @@ export type CroppedPageRect = {
   height: number
 }
 
+export type CroppedPageScroll = {
+  x: number
+  y: number
+}
+
 export type CroppedPage = {
   id: string
   url: string
@@ -34,6 +39,8 @@ export type CroppedPage = {
   /** Iframe layout size when the crop was saved. */
   frame: { width: number; height: number }
   crop: CroppedPageRect
+  /** Document scroll inside the iframe when the crop was saved. */
+  scroll: CroppedPageScroll
 }
 
 export type Section = {

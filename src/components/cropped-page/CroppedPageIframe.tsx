@@ -6,7 +6,8 @@ type CroppedPageIframeProps = {
   url: string
   className?: string
   title?: string
-  interactive?: boolean
+  /** Matches chrome.scripting target via window.name in the embedded document. */
+  frameName?: string
   /** Saved frame. Set before src so the first layout viewport is this size. */
   width?: number
   height?: number
@@ -16,7 +17,7 @@ export function CroppedPageIframe({
   url,
   className,
   title = "Pinned page",
-  interactive = false,
+  frameName,
   width,
   height,
 }: CroppedPageIframeProps) {
@@ -39,6 +40,7 @@ export function CroppedPageIframe({
 
   return (
     <iframe
+      name={frameName}
       src={src}
       title={title}
       width={sized ? width : undefined}
@@ -49,11 +51,6 @@ export function CroppedPageIframe({
         sized ? "absolute top-0 left-0" : "size-full",
         className
       )}
-      sandbox={
-        interactive
-          ? "allow-scripts allow-same-origin allow-forms allow-popups"
-          : "allow-scripts allow-same-origin"
-      }
     />
   )
 }

@@ -6,11 +6,11 @@ Pin a live cutout of a webpage onto the canvas. Users pick URL and accent, draw 
 
 ## Implemented (v1)
 
-- **Data:** `AppState.croppedPages` — `url`, `accentColor`, canvas `position`, `frame` `{width,height}` at save time, `crop` `{x,y,width,height}` in frame space. YAML export/import (`pegboard.yml` v2).
-- **Add flow:** Canvas edit mode → **Add cutout** → URL/accent dialog → crop overlay (move/resize from corners or edges, Save/Delete/Cancel). **Hide crop** dismisses the cropper so the page can be used; navigations in that iframe update the URL saved with the cutout. The canvas tile clips exactly the saved crop at 1:1.
+- **Data:** `AppState.croppedPages` — `url`, `accentColor`, canvas `position`, `frame` `{width,height}` at save time, `crop` `{x,y,width,height}` in frame space, `scroll` `{x,y}` (iframe document scroll at save). YAML export/import (`pegboard.yml` v2); missing `scroll` loads as `{0,0}`.
+- **Add flow:** Canvas edit mode → **Add cutout** → URL/accent dialog → crop overlay (move/resize from corners or edges, Save/Delete/Cancel). **Hide crop** dismisses the cropper so the page can be used; navigations in that iframe update the URL saved with the cutout. Scroll the page inside the iframe to frame below-the-fold content; scroll is read on save via `chrome.scripting` and restored on the tile. The canvas tile clips exactly the saved crop at 1:1.
 - **Tile:** Section-style frame: accent label with favicon (a real link to the page outside edit mode, so modifier-clicks work), hover drag handle and edit/expand actions (no add-link button). Content is the live iframe clip. Draggable like a section.
 - **Expand:** The window grows and shrinks between the tile and a near-full-window view. The page stays at 1:1 and slides so the crop’s top-left meets the window’s top-left as it closes. `prefers-reduced-motion` snaps. Edit crop reopens the capture overlay on the full frame.
-- **Iframes:** [`CroppedPageIframe`](../../src/components/cropped-page/CroppedPageIframe.tsx) waits until a session [`declarativeNetRequest`](../../src/lib/iframeEmbedHeaders.ts) rule is installed, then loads. The rule strips `X-Frame-Options` and `Content-Security-Policy` on `sub_frame` requests initiated by this extension (the new-tab page is not returned by an active-tab query). A second rule covers the current tab when `chrome.tabs.getCurrent()` works.
+- **Iframes:** [`CroppedPageIframe`](../../src/components/cropped-page/CroppedPageIframe.tsx) waits until a session [`declarativeNetRequest`](../../src/lib/iframeEmbedHeaders.ts) rule is installed, then loads. Each cutout iframe has a stable `name` (`pegboard-cutout:<id>`) so [`cutoutFrameScroll.ts`](../../src/lib/cutoutFrameScroll.ts) can read or pin scroll. The rule strips `X-Frame-Options` and `Content-Security-Policy` on `sub_frame` requests initiated by this extension (the new-tab page is not returned by an active-tab query). A second rule covers the current tab when `chrome.tabs.getCurrent()` works.
 - **List/folders:** Cutouts are not shown; they remain in sync state.
 
 ## Later
@@ -23,7 +23,7 @@ Pin a live cutout of a webpage onto the canvas. Users pick URL and accent, draw 
 
 - Header stripping is scoped to the new-tab tab and does not fix every embed failure (`<meta>` CSP, nested frames, etc.).
 - `chrome.storage.sync` stores metadata only; pages load live in iframes.
-- Sandboxed iframes; expanded view uses a richer sandbox for interaction.
+- Cutout iframes are unsandboxed so `scripting` can restore scroll; they load third-party pages only when the user pins a URL.
 
 ## Open questions
 
