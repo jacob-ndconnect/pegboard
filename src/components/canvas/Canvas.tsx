@@ -39,6 +39,7 @@ type CanvasProps = {
   editingSectionId?: string | null
   onSectionNameChange?: (sectionId: string, name: string) => void
   onSectionAccentChange?: (sectionId: string, accentColor: string) => void
+  onDeleteSection?: (sectionId: string) => void
   onExitSectionEdit?: () => void
   onEditLink: (sectionId: string, linkId: string) => void
   onAddLink: (sectionId: string) => void
@@ -97,6 +98,7 @@ export function Canvas({
   editingSectionId = null,
   onSectionNameChange,
   onSectionAccentChange,
+  onDeleteSection,
   onExitSectionEdit,
   onEditLink,
   onAddLink,
@@ -284,6 +286,11 @@ export function Canvas({
                 onRename={(name) => onSectionNameChange?.(section.id, name)}
                 onAccentColorChange={(accentColor) =>
                   onSectionAccentChange?.(section.id, accentColor)
+                }
+                onDelete={
+                  onDeleteSection
+                    ? () => onDeleteSection(section.id)
+                    : undefined
                 }
                 onExitLabelEditing={onExitSectionEdit}
                 onEditLink={(linkId) => onEditLink(section.id, linkId)}

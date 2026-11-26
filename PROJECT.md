@@ -145,7 +145,7 @@ Draggable section card (Canvas only).
 
 - **useDraggable** — `disabled` when `!isDraggable` (see `Canvas` and `DRAGGABLE_ONLY_IN_EDIT`)
 - **onTransformChange** — reports transform to parent for position calculation
-- **Renders:** Section title with `sectionLabelSize`; header actions (add link, edit section); bordered area of `LinkCards`; edit-mode corner resize (snaps by **link-tile** width via `LINK_CARD_WIDTH_PX` / `LINK_CARD_GAP_PX` in `canvasGrid.ts`; span = tiles per row, clamped `1…links.length`; explicit `section.canvasColumnSpan` when set, else default = link count). Debug: `localStorage.pegboardDebugSectionResize = "1"` on the new tab page → `[SectionResize]` logs in DevTools.
+- **Renders:** Section title with `sectionLabelSize`; header actions (add link, edit section). While the label is being edited inline, the accent picker and a delete button sit beside the name. Bordered area of `LinkCards`; edit-mode corner resize (snaps by **link-tile** width via `LINK_CARD_WIDTH_PX` / `LINK_CARD_GAP_PX` in `canvasGrid.ts`; span = tiles per row, clamped `1…links.length`; explicit `section.canvasColumnSpan` when set, else default = link count). Debug: `localStorage.pegboardDebugSectionResize = "1"` on the new tab page → `[SectionResize]` logs in DevTools.
 
 #### `LinkCard.tsx`
 

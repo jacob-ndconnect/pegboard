@@ -275,6 +275,7 @@ export function App() {
 
   const handleSectionDelete = useCallback(
     (sectionId: string) => {
+      setCanvasSectionEditId((id) => (id === sectionId ? null : id))
       save((prev) => ({
         ...prev,
         sections: prev.sections.filter((s) => s.id !== sectionId),
@@ -511,6 +512,7 @@ export function App() {
                 onSectionAccentChange={(sectionId, accentColor) =>
                   patchSection(sectionId, { accentColor })
                 }
+                onDeleteSection={handleSectionDelete}
                 onExitSectionEdit={() => setCanvasSectionEditId(null)}
                 onEditLink={openEditLink}
                 onAddLink={openAddLink}

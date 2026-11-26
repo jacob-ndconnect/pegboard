@@ -29,6 +29,7 @@ import {
   FloppyDiskIcon,
   PaletteIcon,
   PencilSimpleIcon,
+  TrashIcon,
 } from "@phosphor-icons/react/dist/ssr"
 
 type SectionFrameProps = {
@@ -41,6 +42,7 @@ type SectionFrameProps = {
   labelEditing?: boolean
   onRename?: (name: string) => void
   onAccentColorChange?: (accentColor: string) => void
+  onDelete?: () => void
   onExitLabelEditing?: () => void
   /** Faded and non-interactive while another section is being renamed. */
   muted?: boolean
@@ -66,6 +68,7 @@ export function SectionFrame({
   labelEditing = false,
   onRename,
   onAccentColorChange,
+  onDelete,
   onExitLabelEditing,
   muted = false,
   onEditLink,
@@ -292,7 +295,7 @@ export function SectionFrame({
                   onExitLabelEditing?.()
                 }}
                 onPointerDown={(e) => e.stopPropagation()}
-                className="field-sizing-content min-w-[4ch] max-w-[70vw] bg-transparent text-white outline-none placeholder:text-white/60"
+                className="field-sizing-content max-w-[70vw] min-w-[4ch] bg-transparent text-white outline-none placeholder:text-white/60"
               />
             </label>
             <ColorPickerPopover
@@ -309,6 +312,20 @@ export function SectionFrame({
                 />
               }
             />
+            {onDelete ? (
+              <button
+                type="button"
+                aria-label="Delete section"
+                onPointerDown={(e) => e.stopPropagation()}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onDelete()
+                }}
+                className="flex size-8 cursor-pointer items-center justify-center bg-transparent p-0 text-destructive transition-transform hover:bg-destructive/10 hover:text-destructive active:scale-[0.96]"
+              >
+                <TrashIcon className="size-5" aria-hidden />
+              </button>
+            ) : null}
           </div>
         ) : (
           <h3
